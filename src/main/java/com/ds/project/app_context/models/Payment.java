@@ -43,7 +43,7 @@ public class Payment {
     @OneToOne
     @JoinColumn(name = "order_id", nullable = false)
     @JsonIgnore
-    private Orders orders;
+    private Order order;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
