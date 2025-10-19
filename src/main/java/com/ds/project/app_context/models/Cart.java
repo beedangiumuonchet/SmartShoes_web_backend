@@ -5,19 +5,19 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 
-import java.math.BigDecimal;
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "carts")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Orders {
+public class Cart {
 
     @Id
     @JdbcTypeCode(Types.VARCHAR)
@@ -25,23 +25,17 @@ public class Orders {
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     @JsonIgnore
     private User user;
 
-    @OneToOne(mappedBy = "orders", cascade = CascadeType.ALL)
-    private Payment payment;
-
-    @Column(nullable = false, length = 50)
-    private String status;
-
-    @Column(name = "total_amount", nullable = false)
+    @Column(name = "total", nullable = false)
     @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    private Double total = 0.0;
 
-    @OneToMany(mappedBy = "orders", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderDetail> orderDetails;
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartDetail> details = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
