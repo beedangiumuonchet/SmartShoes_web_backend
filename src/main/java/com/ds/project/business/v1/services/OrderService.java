@@ -250,7 +250,8 @@ public class OrderService implements IOrderService {
             OrderStatus next = request.getStatus();
 
             boolean allowed = switch (current) {
-                case PENDING -> next == OrderStatus.CONFIRMED;
+                case PENDING -> next == OrderStatus.PAID;
+                case PAID -> next == OrderStatus.CONFIRMED;
                 case CONFIRMED -> next == OrderStatus.SHIPPING;
                 case SHIPPING -> next == OrderStatus.DELIVERED;
                 default -> false;

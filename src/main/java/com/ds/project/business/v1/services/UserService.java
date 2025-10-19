@@ -194,51 +194,63 @@ public class UserService implements IUserService {
                     .message(Optional.of("User not found with id: " + id))
                     .build();
             }
-            
-            // Check if new email conflicts with existing user
-            if (!existingUser.getEmail().equals(userRequest.getEmail()) && 
-                userRepository.existsByEmail(userRequest.getEmail())) {
-                return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User with email " + userRequest.getEmail() + " already exists"))
-                    .build();
-            }
-            
-            // Check if new username conflicts with existing user
-            if (!existingUser.getUsername().equals(userRequest.getUsername()) && 
-                userRepository.existsByUsername(userRequest.getUsername())) {
-                return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User with username " + userRequest.getUsername() + " already exists"))
-                    .build();
-            }
-            
-            existingUser.setEmail(userRequest.getEmail());
-            existingUser.setUsername(userRequest.getUsername());
-            existingUser.setFirstName(userRequest.getFirstName());
-            existingUser.setLastName(userRequest.getLastName());
-            existingUser.setPassword(PasswordUtils.encodePassword(userRequest.getPassword()));
-            existingUser.setUpdatedAt(LocalDateTime.now());
-            
-            // Update roles if provided
-            if (userRequest.getRoles() != null) {
-                // Clear existing roles
-                if (existingUser.getUserRoles() != null) {
-                    // Remove all existing user roles from database
-                    userRolesRepository.deleteByUserId(existingUser.getId());
-                    existingUser.getUserRoles().clear();
+
+            // Email
+            if (userRequest.getEmail() != null && !userRequest.getEmail().isBlank()) {
+                if (!existingUser.getEmail().equals(userRequest.getEmail()) &&
+                        userRepository.existsByEmail(userRequest.getEmail())) {
+                    return BaseResponse.<UserDto>builder()
+                            .message(Optional.of("User with email " + userRequest.getEmail() + " already exists"))
+                            .build();
                 }
-                
-                // Add new roles
+                existingUser.setEmail(userRequest.getEmail());
+            }
+
+// Username
+            if (userRequest.getUsername() != null && !userRequest.getUsername().isBlank()) {
+                if (!existingUser.getUsername().equals(userRequest.getUsername()) &&
+                        userRepository.existsByUsername(userRequest.getUsername())) {
+                    return BaseResponse.<UserDto>builder()
+                            .message(Optional.of("User with username " + userRequest.getUsername() + " already exists"))
+                            .build();
+                }
+                existingUser.setUsername(userRequest.getUsername());
+            }
+
+// First name & last name
+            if (userRequest.getFirstName() != null) existingUser.setFirstName(userRequest.getFirstName());
+            if (userRequest.getLastName() != null) existingUser.setLastName(userRequest.getLastName());
+
+// Birthday, gender, phone
+            if (userRequest.getBirthday() != null) existingUser.setBirthday(userRequest.getBirthday());
+            if (userRequest.getGender() != null) existingUser.setGender(userRequest.getGender());
+            if (userRequest.getPhoneNumber() != null) existingUser.setPhoneNumber(userRequest.getPhoneNumber());
+
+// Status
+            if (userRequest.getStatus() != null) existingUser.setStatus(userRequest.getStatus());
+
+// Password — chỉ encode nếu có giá trị mới
+            if (userRequest.getPassword() != null && !userRequest.getPassword().isBlank()) {
+                existingUser.setPassword(PasswordUtils.encodePassword(userRequest.getPassword()));
+            }
+
+// Roles — giữ nguyên logic hiện tại
+            if (userRequest.getRoles() != null) {
+                userRolesRepository.deleteByUserId(existingUser.getId());
+                existingUser.getUserRoles().clear();
+
                 for (String roleName : userRequest.getRoles()) {
                     Optional<Role> roleOpt = roleRepository.findByName(roleName);
                     if (roleOpt.isPresent() && !roleOpt.get().getDeleted()) {
                         existingUser.addRole(roleOpt.get());
                     } else {
-                        log.warn("Role '{}' not found or deleted, skipping role assignment for user: {}", 
-                            roleName, existingUser.getEmail());
+                        log.warn("Role '{}' not found or deleted, skipping role assignment for user: {}",
+                                roleName, existingUser.getEmail());
                     }
                 }
             }
-            
+
+
             User updatedUser = userRepository.save(existingUser);
             
             UserDto userDto = userMapper.mapToDto(updatedUser);
