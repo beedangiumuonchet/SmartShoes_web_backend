@@ -21,6 +21,10 @@ public class UserPayload {
     private String email;
     private String firstName;
     private String lastName;
+    private String birthday;
+    private String phoneNumber;
+    private String gender;
+    private String status;
     private List<String> roles;
     private long iat;
     private long exp;

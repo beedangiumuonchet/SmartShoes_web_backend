@@ -2,13 +2,11 @@ package com.ds.project.common.entities.dto.request;
 
 import com.ds.project.common.enums.OrderStatus;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
+@Setter
 public class UpdateStatusRequest {
-    @NotNull
     private OrderStatus status;
 }
