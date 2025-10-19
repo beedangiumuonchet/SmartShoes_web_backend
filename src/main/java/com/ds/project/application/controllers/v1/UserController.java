@@ -69,10 +69,10 @@ public class UserController {
     
     @PutMapping("/{id}")
     @AuthRequired
-    public ResponseEntity<Map<String, Object>> updateUser(@PathVariable String id, @Valid @RequestBody UserRequest userRequest) {
+        public ResponseEntity<Map<String, Object>> updateUser(@PathVariable String id, @Valid @RequestBody UserRequest userRequest) {
         BaseResponse<UserDto> response = userService.updateUser(id, userRequest);
-        
-        if (response.getResult().isPresent()) {
+
+        if (response.getResult() != null && response.getResult().isPresent()) {
             return ResponseUtils.success(response.getResult().get());
         } else {
             return ResponseUtils.error(response.getMessage().orElse("Failed to update user"), 

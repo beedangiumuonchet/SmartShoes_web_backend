@@ -1,10 +1,11 @@
 package com.ds.project.app_context.models;
 
+import com.ds.project.common.enums.GenderStatus;
+import com.ds.project.common.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,43 +29,57 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-    
+
     @Id
     @JdbcTypeCode(Types.VARCHAR)
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
-    
+
     @Column(unique = true, nullable = false)
     private String email;
-    
+
     @Column(unique = true, nullable = false)
     private String username;
-    
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
-    
+
     @Column(name = "last_name", nullable = false)
     private String lastName;
-    
+
+    @Column(name = "birthday")
+    private LocalDate birthday;
+
+    @Column(name = "phone_number", nullable = true)
+    private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private GenderStatus gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserStatus status;
+
     @Column(nullable = false)
     private String password;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<UserRoles> userRoles;
-    
+
     @Column(name = "deleted", nullable = false)
     @Builder.Default
     private Boolean deleted = false;
-    
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
-    
+
     @Column(name = "updated_at")
     private java.time.LocalDateTime updatedAt;
-    
+
     /**
      * Get all roles associated with this user
      */
@@ -75,7 +91,7 @@ public class User {
             .map(UserRoles::getRole)
             .collect(Collectors.toSet());
     }
-    
+
     /**
      * Add a role to this user
      */
@@ -90,7 +106,7 @@ public class User {
             .build();
         userRoles.add(userRole);
     }
-    
+
     /**
      * Remove a role from this user
      */
@@ -99,7 +115,7 @@ public class User {
             userRoles.removeIf(userRole -> userRole.getRole().equals(role));
         }
     }
-    
+
     /**
      * Check if user has a specific role
      */

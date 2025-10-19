@@ -1,24 +1,21 @@
 package com.ds.project.app_context.models;
 
-import com.ds.project.common.enums.PaymentMethod;
-import com.ds.project.common.enums.PaymentStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 
-import java.math.BigDecimal;
 import java.sql.Types;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "cart_details")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment {
+public class CartDetail {
 
     @Id
     @JdbcTypeCode(Types.VARCHAR)
@@ -26,24 +23,23 @@ public class Payment {
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
-    @Column(nullable = false)
-    private BigDecimal amount;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method", nullable = false, length = 50)
-    private PaymentMethod paymentMethod;
-
-    @Column(name = "transaction_id", unique = true)
-    private String transactionId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private PaymentStatus status;
-
-    @OneToOne
-    @JoinColumn(name = "order_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
     @JsonIgnore
-    private Order order;
+    private Cart cart;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_variant_id", nullable = false)
+    private ProductVariant productVariant;
+
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @Column(nullable = false)
+    private Double price; // unit price snapshot
+
+    @Column(nullable = false)
+    private Double subtotal; // price * quantity snapshot
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

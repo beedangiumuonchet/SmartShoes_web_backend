@@ -66,6 +66,9 @@ public class UserStartup {
                 .username(adminUsername)
                 .firstName("")
                 .lastName("")
+                .gender(com.ds.project.common.enums.GenderStatus.OTHER)
+                .phoneNumber("")
+                .status(com.ds.project.common.enums.UserStatus.ACTIVE)
                 .password(adminPassword)
                 .roles(Set.of("ADMIN"))
                 .build();
@@ -106,6 +109,9 @@ public class UserStartup {
                         .username(username)
                         .firstName("Manager")
                         .lastName(String.format("User %d", i))
+                        .gender(com.ds.project.common.enums.GenderStatus.MALE)
+                        .phoneNumber(String.format("012345678%d", i))
+                        .status(com.ds.project.common.enums.UserStatus.ACTIVE)
                         .password("password")
                         .roles(roles)
                         .build();
