@@ -2,29 +2,24 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.sql.Types;
 
 @Entity
-@Table(name = "product_image")
+@Table(name = "promotion_product")
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductImage {
+@Builder
+public class PromotionProduct {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    private String url;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion;
 
-    @Column(name = "is_main")
-    private Boolean isMain;
-
-    // Nếu ảnh liên kết với ProductVariant
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_variant_id")
     private ProductVariant productVariant;

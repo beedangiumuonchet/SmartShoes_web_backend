@@ -21,9 +21,14 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(unique = true, nullable = false)
     private String name;
     private String description;
-    private String status;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    @Column(unique = true, nullable = false)
     private String slug;
 
     @Builder.Default
@@ -41,9 +46,15 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private Set<ProductVariant> variants;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private Set<ProductImage> images;
+//    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+//    private Set<ProductImage> images;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private Set<ProductAttribute> productAttributes;
+
+    public enum Status {
+        ACTIVE,        // Đang kinh doanh
+        INACTIVE,      // Ngừng kinh doanh
+        OUT_OF_STOCK  // Hết hàng
+    }
 }
