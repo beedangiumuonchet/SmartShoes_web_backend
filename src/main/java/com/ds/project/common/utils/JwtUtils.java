@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,17 +41,22 @@ public class JwtUtils {
             userPayload.setIat(currentTime);
             userPayload.setExp(currentTime + expirationTime);
             
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("userId", userPayload.getUserId());
+            claims.put("username", userPayload.getUsername());
+            claims.put("email", userPayload.getEmail());
+            claims.put("firstName", userPayload.getFirstName());
+            claims.put("lastName", userPayload.getLastName());
+            claims.put("birthday", userPayload.getBirthday());
+            claims.put("gender", userPayload.getGender());
+            claims.put("phoneNumber", userPayload.getPhoneNumber());
+            claims.put("status", userPayload.getStatus());
+            claims.put("roles", userPayload.getRoles());
+            claims.put("iat", userPayload.getIat());
+            claims.put("exp", userPayload.getExp());
+            
             return Jwts.builder()
-                    .claims(Map.of(
-                            "userId", userPayload.getUserId(),
-                            "username", userPayload.getUsername(),
-                            "email", userPayload.getEmail(),
-                            "firstName", userPayload.getFirstName(),
-                            "lastName", userPayload.getLastName(),
-                            "roles", userPayload.getRoles(),
-                            "iat", userPayload.getIat(),
-                            "exp", userPayload.getExp()
-                    ))
+                    .claims(claims)
                     .signWith(getSigningKey())
                     .compact();
                     
@@ -107,6 +113,10 @@ public class JwtUtils {
                 .email(claims.get("email", String.class))
                 .firstName(claims.get("firstName", String.class))
                 .lastName(claims.get("lastName", String.class))
+                .birthday(claims.get("birthday", String.class))
+                .gender(claims.get("gender", String.class))
+                .status(claims.get("status", String.class))
+                .phoneNumber(claims.get("phoneNumber", String.class))
                 .roles(roles)
                 .iat(claims.get("iat", Long.class))
                 .exp(claims.get("exp", Long.class))
