@@ -1,5 +1,6 @@
 package com.ds.project.application.startup;
 
+import com.ds.project.application.startup.data.ProductStartup;
 import com.ds.project.application.startup.data.RoleStartup;
 import com.ds.project.application.startup.data.SettingStartup;
 import com.ds.project.application.startup.data.UserStartup;
@@ -25,7 +26,8 @@ public class AppStartup implements CommandLineRunner {
     private final RoleStartup roleStartup;
     private final UserStartup userStartup;
     private final SettingStartup settingStartup;
-    
+    private final ProductStartup productStartup;
+
     @Override
     public void run(String... args) throws Exception {
         log.info("Starting application startup process...");
@@ -35,9 +37,11 @@ public class AppStartup implements CommandLineRunner {
             CompletableFuture<Void> roleFuture = initializeRolesAsync();
             CompletableFuture<Void> userFuture = roleFuture.thenCompose(v -> initializeUsersAsync());
             CompletableFuture<Void> settingFuture = userFuture.thenCompose(v -> initializeSettingsAsync());
-            
+
+            CompletableFuture<Void> productFuture = settingFuture.thenCompose(v -> initializeProductsAsync());
+
             // Wait for all startup processes to complete
-            CompletableFuture.allOf(roleFuture, userFuture, settingFuture).join();
+            CompletableFuture.allOf(roleFuture, userFuture, settingFuture, productFuture).join();
             
             log.info("Application startup process completed successfully");
         } catch (Exception e) {
@@ -81,4 +85,18 @@ public class AppStartup implements CommandLineRunner {
             }
         });
     }
+
+    @Async
+    public CompletableFuture<Void> initializeProductsAsync() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                productStartup.initializeProductBaseData();
+            } catch (Exception e) {
+                log.error("Failed to initialize product base data asynchronously: {}", e.getMessage());
+                throw new RuntimeException("Product base data initialization failed", e);
+            }
+        });
+    }
+
+
 }

@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product_variants",
@@ -35,4 +37,8 @@ public class ProductVariant {
 
     private Double price;
     private Integer stock;
+
+    @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
+
 }
