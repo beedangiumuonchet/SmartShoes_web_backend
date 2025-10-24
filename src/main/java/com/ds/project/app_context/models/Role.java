@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role {
+public class    Role {
     
     @Id
     @JdbcTypeCode(Types.VARCHAR)

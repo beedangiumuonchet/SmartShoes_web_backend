@@ -6,9 +6,7 @@ import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.common.UserPayload;
 import com.ds.project.common.entities.dto.UserDto;
 import com.ds.project.common.entities.dto.request.LoginRequest;
-import com.ds.project.common.entities.dto.request.RegisterRequest;
 import com.ds.project.common.entities.dto.response.LoginResponse;
-import com.ds.project.common.entities.dto.response.RegisterResponse;
 import com.ds.project.common.utils.JwtUtils;
 import com.ds.project.common.utils.ResponseUtils;
 import jakarta.validation.Valid;
@@ -64,6 +62,10 @@ public class AuthenticationController {
                     .email(userDto.getEmail())
                     .firstName(userDto.getFirstName())
                     .lastName(userDto.getLastName())
+                    .birthday(userDto.getBirthday() != null ? userDto.getBirthday().toString() : null)
+                    .gender(userDto.getGender() != null ? userDto.getGender().toString() : null)
+                    .phoneNumber(userDto.getPhoneNumber())
+                    .status(userDto.getStatus() != null ? userDto.getStatus().toString() : null)
                     .roles(List.copyOf(userDto.getRoles()))
                     .build();
 
@@ -118,4 +120,6 @@ public class AuthenticationController {
             return ResponseUtils.error("Failed to get user info", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 }
