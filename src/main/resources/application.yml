@@ -4,13 +4,13 @@ spring:
     url: jdbc:mysql://localhost:3306/shoesstore_db
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: 123456
+    password: 2211
 
   # JPA Configuration for Development
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -49,3 +49,5 @@ app:
     email: admin@mail.mail
     username: admin
     password: admin
+  startup:
+    create-dev-datas: true
