@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://localhost:3306/shoesstore_db
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: 123456
+    password: 2211
 
   # JPA Configuration for Development
   jpa:
@@ -49,7 +49,8 @@ app:
     email: admin@mail.mail
     username: admin
     password: admin
-
+  startup:
+    create-dev-datas: true
 momo:
   partner-code: MOMO
   access-key: F8BBA842ECF85
