@@ -6,10 +6,9 @@ import com.ds.project.app_context.repositories.OrderRepository;
 import com.ds.project.app_context.repositories.PaymentRepository;
 import com.ds.project.application.configs.MomoConfig;
 import com.ds.project.common.entities.base.BaseResponse;
+import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.PaymentDto;
-import com.ds.project.common.entities.dto.request.CreateMomoPaymentRequest;
-import com.ds.project.common.entities.dto.request.CreatePaymentRequest;
-import com.ds.project.common.entities.dto.request.MomoIpnRequest;
+import com.ds.project.common.entities.dto.request.*;
 import com.ds.project.common.entities.dto.response.HandleMomoIpnRequest;
 import com.ds.project.common.entities.dto.response.MomoPaymentResponse;
 import com.ds.project.common.enums.PaymentMethod;
@@ -17,17 +16,20 @@ import com.ds.project.common.enums.PaymentStatus;
 import com.ds.project.common.interfaces.IPaymentService;
 import com.ds.project.common.mapper.PaymentMapper;
 import com.ds.project.common.utils.HmacSHA256;
+
+import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -84,21 +86,21 @@ public class PaymentService implements IPaymentService {
         String requestType = momoConfig.getRequestType();
         String createEndpoint = momoConfig.getCreateEndpoint();
         try {
-            // ✅ 1. Tạo record Payment (PENDING)
+            // 1. Tạo record Payment (PENDING)
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
             Payment payment = Payment.builder()
                     .amount(amount)
                     .paymentMethod(PaymentMethod.MOMO)
-                    .transactionId(UUID.randomUUID().toString()) // orderId bên MoMo
+                    .transactionId(UUID.randomUUID().toString())
                     .status(PaymentStatus.PENDING)
                     .order(order)
+                    .createdAt(LocalDateTime.now())
                     .build();
             paymentRepository.save(payment);
-            orderRepository.save(order);
 
-            // ✅ 2. Tạo chữ ký và request gửi MoMo
+            // 2. Tạo chữ ký và request gửi MoMo
             String requestId = UUID.randomUUID().toString();
             String extraData = "";
             String orderInfo = "Thanh toán MoMo cho đơn hàng #" + orderId;
@@ -132,12 +134,12 @@ public class PaymentService implements IPaymentService {
 
             log.info("[MoMo] Sending request: {}", momoRequest);
 
-            // ✅ 3. Gửi request
+            // 3. Gửi request
             RestTemplate restTemplate = new RestTemplate();
             MomoPaymentResponse response =
                     restTemplate.postForObject(createEndpoint, momoRequest, MomoPaymentResponse.class);
 
-            // ✅ 4. Kiểm tra kết quả
+            // 4. Kiểm tra kết quả
             if (response == null || response.getResultCode() != 0) {
                 log.error("[MoMo] Tạo giao dịch thất bại: {}", response);
                 return BaseResponse.error("Tạo giao dịch MoMo thất bại");
@@ -151,8 +153,6 @@ public class PaymentService implements IPaymentService {
             return BaseResponse.error("Lỗi tạo MoMo payment: " + e.getMessage());
         }
     }
-
-
 
     // ========== HANDLE MOMO IPN ==========
     @Override
@@ -175,7 +175,7 @@ public class PaymentService implements IPaymentService {
 
             Payment payment = maybe.get();
 
-            // ✅ Kết quả thanh toán thành công
+            // Kết quả thanh toán thành công
             if ("0".equals(ipnRequest.getResultCode())) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 if (payment.getOrder() != null) {
@@ -204,7 +204,6 @@ public class PaymentService implements IPaymentService {
         }
     }
 
-
     // ========== PAYMENT RETURN (user redirect after payment) ==========
     @Override
     public BaseResponse<PaymentDto> paymentReturn(String transactionId) {
@@ -212,7 +211,6 @@ public class PaymentService implements IPaymentService {
             Payment payment = paymentRepository.findByTransactionId(transactionId)
                     .orElseThrow(() -> new RuntimeException("Payment not found"));
 
-            // Lưu ý: trong thực tế, khi user redirect bạn vẫn cần kiểm tra trạng thái thật bằng query server Momo hoặc DB (IPN)
             return BaseResponse.<PaymentDto>builder()
                     .result(Optional.of(paymentMapper.mapToDto(payment)))
                     .build();
@@ -226,22 +224,95 @@ public class PaymentService implements IPaymentService {
         }
     }
 
-    // ========== GET ALL ==========
+    // ========== GET ALL (phân trang + filter) ==========
     @Override
-    public BaseResponse<List<PaymentDto>> getAllPayments() {
+    public PaginationResponse<PaymentDto> getAllPayments(PaymentFilterRequest filter) {
         try {
-            List<PaymentDto> list = paymentRepository.findAll()
-                    .stream().map(paymentMapper::mapToDto)
-                    .collect(Collectors.toList());
-            return BaseResponse.<List<PaymentDto>>builder()
-                    .result(Optional.of(list))
+            // ====== Cấu hình sắp xếp ======
+            String sortBy = (filter.getSortBy() != null && !filter.getSortBy().isBlank())
+                    ? filter.getSortBy() : "createdAt";
+            String sortDir = (filter.getSortDirection() != null && !filter.getSortDirection().isBlank())
+                    ? filter.getSortDirection() : "desc";
+
+            Sort sort = sortDir.equalsIgnoreCase("desc")
+                    ? Sort.by(sortBy).descending()
+                    : Sort.by(sortBy).ascending();
+
+            // ====== Cấu hình phân trang ======
+            int page = (filter.getPage() != null && filter.getPage() >= 0) ? filter.getPage() : 0;
+            int size = (filter.getSize() != null && filter.getSize() > 0) ? filter.getSize() : 10;
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // ====== Xây dựng điều kiện filter ======
+            Specification<Payment> spec = (root, query, cb) -> {
+                List<Predicate> predicates = new ArrayList<>();
+
+                // Tìm kiếm theo id, transactionCode hoặc username
+                if (filter.getQ() != null && !filter.getQ().isBlank()) {
+                    String kw = "%" + filter.getQ().toLowerCase() + "%";
+                    predicates.add(cb.or(
+                            cb.like(cb.lower(root.get("id").as(String.class)), kw),
+                            cb.like(cb.lower(root.get("transactionId")), kw)
+                            //cb.like(cb.lower(root.get("user").get("username")), kw)
+                    ));
+                }
+
+                // Lọc theo status
+                if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
+                    predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+                }
+
+                // Lọc theo method
+                if (filter.getMethod() != null && !filter.getMethod().isBlank()) {
+                    predicates.add(cb.equal(root.get("method"), filter.getMethod()));
+                }
+
+                // Lọc theo ngày tạo
+                if (filter.getCreatedDate_from() != null) {
+                    predicates.add(cb.greaterThanOrEqualTo(
+                            root.get("createdAt"), filter.getCreatedDate_from().atStartOfDay()
+                    ));
+                }
+
+                if (filter.getCreatedDate_to() != null) {
+                    predicates.add(cb.lessThanOrEqualTo(
+                            root.get("createdAt"), filter.getCreatedDate_to().atTime(23, 59, 59)
+                    ));
+                }
+
+                // Lọc theo userId (nếu có)
+                if (filter.getUserId() != null && !filter.getUserId().isBlank()) {
+                    predicates.add(cb.equal(root.get("user").get("id"), filter.getUserId()));
+                }
+
+                return cb.and(predicates.toArray(new Predicate[0]));
+            };
+
+            // ====== Truy vấn & map kết quả ======
+            var pageResult = paymentRepository.findAll(spec, pageable);
+            List<PaymentDto> content = pageResult.getContent().stream()
+                    .map(paymentMapper::mapToDto)
+                    .toList();
+
+            log.info("✅ getAllPayments fetched {} records (page {} / {})",
+                    content.size(), pageResult.getNumber() + 1, pageResult.getTotalPages());
+
+            // ====== Trả về kết quả phân trang ======
+            return PaginationResponse.<PaymentDto>builder()
+                    .content(content)
+                    .page(pageResult.getNumber())
+                    .size(pageResult.getSize())
+                    .totalElements(pageResult.getTotalElements())
+                    .totalPages(pageResult.getTotalPages())
+                    .first(pageResult.isFirst())
+                    .last(pageResult.isLast())
+                    .hasNext(pageResult.hasNext())
+                    .hasPrevious(pageResult.hasPrevious())
                     .build();
+
         } catch (Exception e) {
-            log.error("getAllPayments error: {}", e.getMessage(), e);
-            return BaseResponse.<List<PaymentDto>>builder()
-                    .message(Optional.of("Failed to get payments: " + e.getMessage()))
-                    .result(Optional.empty())
-                    .build();
+            log.error("❌ getAllPayments error: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch payments: " + e.getMessage(), e);
         }
     }
 
