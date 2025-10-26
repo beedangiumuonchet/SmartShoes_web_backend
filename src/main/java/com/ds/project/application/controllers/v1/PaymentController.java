@@ -2,15 +2,19 @@ package com.ds.project.application.controllers.v1;
 
 import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.common.entities.base.BaseResponse;
+import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.common.UserPayload;
 import com.ds.project.common.entities.dto.PaymentDto;
 import com.ds.project.common.entities.dto.request.CreateMomoPaymentRequest;
 import com.ds.project.common.entities.dto.request.CreatePaymentRequest;
+import com.ds.project.common.entities.dto.request.PaymentFilterRequest;
 import com.ds.project.common.entities.dto.response.HandleMomoIpnRequest;
 import com.ds.project.common.entities.dto.response.MomoPaymentResponse;
 import com.ds.project.common.interfaces.IPaymentService;
 import com.ds.project.common.utils.ResponseUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +33,7 @@ public class PaymentController {
 
     private final IPaymentService paymentService;
 
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof UserPayload payload) {
@@ -103,12 +108,14 @@ public class PaymentController {
 
     @AuthRequired
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllPayments() {
-        BaseResponse<List<PaymentDto>> resp = paymentService.getAllPayments();
-        return resp.getResult().isPresent()
-                ? ResponseUtils.success(resp.getResult().get())
-                : ResponseUtils.error(resp.getMessage().orElse("Failed to get payments"),
-                org.springframework.http.HttpStatus.BAD_REQUEST);
+    public ResponseEntity<?> getAllPayments(@ModelAttribute PaymentFilterRequest filter) {
+        try {
+            PaginationResponse<PaymentDto> response = paymentService.getAllPayments(filter);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("❌ Failed to fetch payments: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Failed to fetch payments: " + e.getMessage());
+        }
     }
 
     @AuthRequired

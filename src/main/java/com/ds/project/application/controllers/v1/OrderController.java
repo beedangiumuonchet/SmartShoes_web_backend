@@ -2,14 +2,18 @@ package com.ds.project.application.controllers.v1;
 
 import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.common.entities.base.BaseResponse;
+import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.common.UserPayload;
 import com.ds.project.common.entities.dto.OrderDto;
 import com.ds.project.common.entities.dto.request.BuyNowRequest;
 import com.ds.project.common.entities.dto.request.FromCartRequest;
+import com.ds.project.common.entities.dto.request.OrderFilterRequest;
 import com.ds.project.common.entities.dto.request.UpdateStatusRequest;
 import com.ds.project.common.interfaces.IOrderService;
 import com.ds.project.common.utils.ResponseUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +33,7 @@ public class OrderController {
     /**
      * Lấy userId từ SecurityContext (đã có trong JWT)
      */
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof UserPayload payload) {
@@ -73,13 +78,16 @@ public class OrderController {
 
     @AuthRequired
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllOrders() {
-        BaseResponse<List<OrderDto>> response = orderService.getAllOrders();
-        return response.getResult().isPresent()
-                ? ResponseUtils.success(response.getResult().get())
-                : ResponseUtils.error(response.getMessage().orElse("Failed to get orders"),
-                org.springframework.http.HttpStatus.BAD_REQUEST);
+    public ResponseEntity<?> getAllOrders(@ModelAttribute OrderFilterRequest filter) {
+        try {
+            PaginationResponse<OrderDto> response = orderService.getAllOrders(filter);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("❌ Failed to fetch orders: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Failed to fetch orders: " + e.getMessage());
+        }
     }
+
 
     @AuthRequired
     @GetMapping("/users/{userId}")

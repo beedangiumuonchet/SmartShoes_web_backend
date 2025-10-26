@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://localhost:3306/shoesstore_db
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: 2211
+    password: 123456
 
   # JPA Configuration for Development
   jpa:
