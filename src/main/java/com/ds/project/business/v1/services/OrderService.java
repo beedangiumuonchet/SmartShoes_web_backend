@@ -3,20 +3,27 @@ package com.ds.project.business.v1.services;
 import com.ds.project.app_context.models.*;
 import com.ds.project.app_context.repositories.*;
 import com.ds.project.common.entities.base.BaseResponse;
+import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.OrderDto;
 import com.ds.project.common.entities.dto.request.BuyNowRequest;
 import com.ds.project.common.entities.dto.request.FromCartRequest;
+import com.ds.project.common.entities.dto.request.OrderFilterRequest;
 import com.ds.project.common.entities.dto.request.UpdateStatusRequest;
 import com.ds.project.common.enums.OrderStatus;
 import com.ds.project.common.interfaces.IOrderService;
 import com.ds.project.common.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import jakarta.persistence.criteria.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -178,22 +185,70 @@ public class OrderService implements IOrderService {
 
     // =============== GET ALL ORDERS ===============
     @Override
-    public BaseResponse<List<OrderDto>> getAllOrders() {
-        try {
-            List<OrderDto> orders = orderRepository.findAll()
-                    .stream().map(orderMapper::mapToDto)
-                    .collect(Collectors.toList());
-            return BaseResponse.<List<OrderDto>>builder()
-                    .result(Optional.of(orders))
-                    .build();
-        } catch (Exception e) {
-            log.error("Error in getAllOrders: {}", e.getMessage(), e);
-            return BaseResponse.<List<OrderDto>>builder()
-                    .message(Optional.of("Failed to get orders: " + e.getMessage()))
-                    .result(Optional.empty())
-                    .build();
-        }
+    public PaginationResponse<OrderDto> getAllOrders(OrderFilterRequest filter) {
+        String sortBy = (filter.getSortBy() != null) ? filter.getSortBy() : "createdAt";
+        String sortDir = (filter.getSortDirection() != null) ? filter.getSortDirection() : "desc";
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize(), sort);
+
+        Specification<Order> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            // Tìm kiếm theo id, tên user hoặc email
+            if (filter.getQ() != null && !filter.getQ().isEmpty()) {
+                String kw = "%" + filter.getQ().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("id")), kw),
+                        cb.like(cb.lower(root.get("user").get("username")), kw),
+                        cb.like(cb.lower(root.get("user").get("email")), kw)
+                ));
+            }
+
+            // Lọc theo userId
+            if (filter.getUserId() != null && !filter.getUserId().isEmpty()) {
+                predicates.add(cb.equal(root.get("user").get("id"), filter.getUserId()));
+            }
+
+            // Lọc theo trạng thái đơn hàng
+            if (filter.getStatus() != null && !filter.getStatus().isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            }
+
+            // Lọc theo ngày tạo
+            if (filter.getCreatedDate_from() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), filter.getCreatedDate_from().atStartOfDay()));
+            }
+            if (filter.getCreatedDate_to() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), filter.getCreatedDate_to().atTime(23, 59, 59)));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        var page = orderRepository.findAll(spec, pageable);
+        List<OrderDto> content = page.getContent().stream()
+                .map(orderMapper::mapToDto)
+                .toList();
+
+        log.info("✅ getAllOrders fetched {} records (page {} / {})", content.size(), page.getNumber() + 1, page.getTotalPages());
+
+        return PaginationResponse.<OrderDto>builder()
+                .content(content)
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .hasNext(page.hasNext())
+                .hasPrevious(page.hasPrevious())
+                .build();
     }
+
+
 
     // =============== GET ORDERS BY USER ===============
     @Override

@@ -1,9 +1,11 @@
 package com.ds.project.common.interfaces;
 
 import com.ds.project.common.entities.base.BaseResponse;
+import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.PaymentDto;
 import com.ds.project.common.entities.dto.request.CreateMomoPaymentRequest;
 import com.ds.project.common.entities.dto.request.CreatePaymentRequest;
+import com.ds.project.common.entities.dto.request.PaymentFilterRequest;
 import com.ds.project.common.entities.dto.response.HandleMomoIpnRequest;
 import com.ds.project.common.entities.dto.response.MomoPaymentResponse;
 
@@ -15,6 +17,8 @@ public interface IPaymentService {
     BaseResponse<MomoPaymentResponse> createMomoPayment(String orderId, BigDecimal amount);
     BaseResponse<PaymentDto> handleMomoIpn(HandleMomoIpnRequest ipnRequest);
     BaseResponse<PaymentDto> paymentReturn(String transactionId);
-    BaseResponse<List<PaymentDto>> getAllPayments();
+    // ========== GET ALL (phân trang + filter) ==========
+    PaginationResponse<PaymentDto> getAllPayments(PaymentFilterRequest filter);
+
     BaseResponse<PaymentDto> getPaymentById(String paymentId);
 }
