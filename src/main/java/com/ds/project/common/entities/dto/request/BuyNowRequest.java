@@ -17,6 +17,13 @@ public class BuyNowRequest {
     @Min(1)
     private Integer quantity;
 
+    // 🆕 Thông tin giao hàng
     @NotBlank
-    private String addressId; // nơi giao (nếu muốn dùng)
+    private String shippingName;
+
+    @NotBlank
+    private String shippingPhone;
+
+    @NotBlank
+    private String shippingAddress;
 }

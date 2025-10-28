@@ -10,6 +10,14 @@ import lombok.*;
 public class FromCartRequest {
     @NotBlank
     private String cartId; // tạo từ giỏ hàng này (thường lấy theo user)
+
+    // 🆕 Thông tin giao hàng
     @NotBlank
-    private String addressId;
+    private String shippingName;
+
+    @NotBlank
+    private String shippingPhone;
+
+    @NotBlank
+    private String shippingAddress;
 }

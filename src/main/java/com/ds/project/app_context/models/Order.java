@@ -36,6 +36,16 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount; // tổng tiền (VND)
 
+    // 👇 Thêm các trường shipping (tĩnh, copy từ Address)
+    @Column(name = "shipping_name", nullable = false, length = 100)
+    private String shippingName;
+
+    @Column(name = "shipping_phone", nullable = false, length = 20)
+    private String shippingPhone;
+
+    @Column(name = "shipping_address", nullable = false, length = 255)
+    private String shippingAddress;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
