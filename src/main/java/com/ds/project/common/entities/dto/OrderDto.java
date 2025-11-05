@@ -15,6 +15,12 @@ public class OrderDto {
     private OrderStatus status;
     private String userId;
     private Double total_amount;
+
+    // 🆕 Shipping info
+    private String shippingName;
+    private String shippingPhone;
+    private String shippingAddress;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderDetailDto> orderDetails;
