@@ -21,6 +21,9 @@ public class OrderMapper {
                 .status(order.getStatus())
                 .userId(order.getUser() != null ? order.getUser().getId() : null)
                 .total_amount(order.getTotalAmount())
+                .shippingName(order.getShippingName())
+                .shippingPhone(order.getShippingPhone())
+                .shippingAddress(order.getShippingAddress())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .orderDetails(order.getOrderDetails() != null

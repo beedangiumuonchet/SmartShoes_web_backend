@@ -65,6 +65,9 @@ public class OrderService implements IOrderService {
                     .user(user)
                     .status(OrderStatus.PENDING)
                     .totalAmount(subtotal)
+                    .shippingName(request.getShippingName())
+                    .shippingAddress(request.getShippingAddress())
+                    .shippingPhone(request.getShippingPhone())
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -132,6 +135,9 @@ public class OrderService implements IOrderService {
             Order order = Order.builder()
                     .user(user)
                     .status(OrderStatus.PENDING)
+                    .shippingName(request.getShippingName())
+                    .shippingAddress(request.getShippingAddress())
+                    .shippingPhone(request.getShippingPhone())
                     .createdAt(LocalDateTime.now())
                     .build();
 
