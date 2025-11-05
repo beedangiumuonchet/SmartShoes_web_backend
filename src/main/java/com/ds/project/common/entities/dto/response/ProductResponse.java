@@ -21,8 +21,8 @@ public class ProductResponse {
     private String slug;
     private LocalDateTime createdAt;
 
-    private String brandName;
-    private String categoryName;
+    private BrandResponse brand;
+    private CategoryResponse category;
 
 //    private List<ProductImageResponse> images;
     private List<ProductVariantResponse> variants;

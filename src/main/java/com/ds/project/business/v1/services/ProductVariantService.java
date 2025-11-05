@@ -8,6 +8,7 @@ import com.ds.project.app_context.repositories.ProductRepository;
 import com.ds.project.app_context.repositories.ProductVariantRepository;
 import com.ds.project.common.entities.dto.request.ProductVariantRequest;
 import com.ds.project.common.entities.dto.response.ProductVariantResponse;
+import com.ds.project.common.entities.dto.response.ProductVariantWithProductResponse;
 import com.ds.project.common.interfaces.IProductVariantService;
 import com.ds.project.common.mapper.ProductVariantMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -78,6 +79,13 @@ public class ProductVariantService implements IProductVariantService {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product variant not found" + id));
         return productVariantMapper.mapToDto(variant);
+    }
+
+    @Override
+    public ProductVariantWithProductResponse getVariantWithProductById(String id) {
+        ProductVariant variant = productVariantRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Product variant not found " + id));
+        return productVariantMapper.mapToDtoWithProduct(variant);
     }
 
     @Override

@@ -72,6 +72,20 @@ public class ProductVariantController {
         }
     }
 
+    @GetMapping("/{id}/with-product")
+    public ResponseEntity<?> getVariantWithProduct(@PathVariable String id) {
+        try {
+            var variant = productVariantService.getVariantWithProductById(id);
+            log.info("🔍 Fetched variant with product for ID: {}", id);
+            return ResponseEntity.ok(variant);
+        } catch (Exception e) {
+            log.error("❌ Failed to fetch variant with product {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body("Failed to fetch variant with product: " + e.getMessage());
+        }
+    }
+
+
     /**
      * Update variant by ID
      */
