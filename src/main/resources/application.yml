@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://localhost:3306/shoesstore_db
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: 123456
+    password: 2211
 
   # JPA Configuration for Development
   jpa:
@@ -16,6 +16,10 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 # Development Logging - Only DB, errors, and app logs
 logging:
@@ -66,3 +70,8 @@ momo:
 
   # Request Type
   request-type: payWithMethod
+# 🚀 Google Drive Configuration
+gdrive:
+  customer-id: 717175626277-eir81eb76aa3c0bgaut9oe9ut7selmn5.apps.googleusercontent.com
+  customer-secret: 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
+  redirect-uri: http://localhost:8080/drive/oauth2/callback
