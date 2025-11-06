@@ -20,7 +20,7 @@ public class OrderMapper {
                 .id(order.getId())
                 .status(order.getStatus())
                 .userId(order.getUser() != null ? order.getUser().getId() : null)
-                .total_amount(order.getTotalAmount())
+                .totalAmount(order.getTotalAmount())
                 .shippingName(order.getShippingName())
                 .shippingPhone(order.getShippingPhone())
                 .shippingAddress(order.getShippingAddress())

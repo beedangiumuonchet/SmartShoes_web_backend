@@ -14,7 +14,7 @@ public class OrderDto {
     private String id;
     private OrderStatus status;
     private String userId;
-    private Double total_amount;
+    private Double totalAmount;
 
     // 🆕 Shipping info
     private String shippingName;
