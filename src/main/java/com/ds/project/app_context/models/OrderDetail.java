@@ -2,10 +2,7 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.math.BigDecimal;
-import java.sql.Types;
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Table(name = "order_details")
@@ -17,16 +14,15 @@ import java.sql.Types;
 public class OrderDetail {
 
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, nullable = false, updatable = false)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    // liên kết tới ProductVariant
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_variant_id", nullable = false)
     private ProductVariant productVariant;
@@ -35,7 +31,7 @@ public class OrderDetail {
     private Integer quantity;
 
     @Column(nullable = false)
-    private Double price; // giá từng đơn vị (số nguyên)
+    private Double price;
 
     @Column(nullable = false)
     private Double subtotal;

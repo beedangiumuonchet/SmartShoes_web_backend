@@ -1,25 +1,35 @@
 spring:
   # Development Database Configuration
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/shoesstore_db
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    username: root
+#    password: 2211
+#
+#  # JPA Configuration for Development
+#  jpa:
+#    database-platform: org.hibernate.dialect.MySQL8Dialect
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: false
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        dialect: org.hibernate.dialect.MySQL8Dialect
+#  servlet:
+#    multipart:
+#      max-file-size: 50MB
+#      max-request-size: 50MB
   datasource:
-    url: jdbc:mysql://localhost:3306/shoesstore_db
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
+    url: jdbc:postgresql://localhost:5432/shoesstore_db
+    username: postgres
     password: 2211
-
-  # JPA Configuration for Development
+    hikari:
+      maximum-pool-size: 10
   jpa:
-    database-platform: org.hibernate.dialect.MySQL8Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
 
 # Development Logging - Only DB, errors, and app logs
 logging:

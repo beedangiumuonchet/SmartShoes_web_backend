@@ -2,6 +2,7 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Table(name = "promotion_product")
@@ -13,7 +14,9 @@ import lombok.*;
 public class PromotionProduct {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
