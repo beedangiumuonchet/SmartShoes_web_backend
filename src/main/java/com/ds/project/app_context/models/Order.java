@@ -3,9 +3,8 @@ package com.ds.project.app_context.models;
 import com.ds.project.common.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +19,9 @@ import java.util.List;
 public class Order {
 
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, nullable = false, updatable = false)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
     private String id;
 
     @Enumerated(EnumType.STRING)
@@ -36,7 +35,7 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount; // tổng tiền (VND)
 
-    // 👇 Thêm các trường shipping (tĩnh, copy từ Address)
+    // 👇 Thông tin giao hàng
     @Column(name = "shipping_name", nullable = false, length = 100)
     private String shippingName;
 
@@ -52,12 +51,7 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(
-            mappedBy = "order",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<OrderDetail> orderDetails = new ArrayList<>();
 

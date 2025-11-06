@@ -2,9 +2,8 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -16,13 +15,16 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
     private String id;
 
     @Column(unique = true, nullable = false)
     private String name;
+
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -46,15 +48,12 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private Set<ProductVariant> variants;
 
-//    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-//    private Set<ProductImage> images;
-
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private Set<ProductAttribute> productAttributes;
 
     public enum Status {
         ACTIVE,        // Đang kinh doanh
         INACTIVE,      // Ngừng kinh doanh
-        OUT_OF_STOCK  // Hết hàng
+        OUT_OF_STOCK   // Hết hàng
     }
 }

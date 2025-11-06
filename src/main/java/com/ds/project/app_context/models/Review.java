@@ -2,9 +2,8 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,21 +14,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Review {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
-    /**
-     * Lưu relation tới Product
-     */
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    /**
-     * Lưu relation tới User (nếu có entity User). Nếu bạn chỉ muốn lưu userId string, đổi sang @Column String userId.
-     */
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

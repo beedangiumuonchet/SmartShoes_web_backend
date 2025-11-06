@@ -2,6 +2,7 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDate;
 
@@ -15,7 +16,9 @@ import java.time.LocalDate;
 public class Promotion {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
     private String name;
@@ -40,6 +43,4 @@ public class Promotion {
         INACTIVE,   // Tạm dừng
         EXPIRED     // Hết hạn
     }
-
-
 }

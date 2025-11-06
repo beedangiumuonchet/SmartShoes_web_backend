@@ -2,9 +2,8 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +18,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductVariant {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
     @ManyToOne
@@ -40,5 +41,4 @@ public class ProductVariant {
 
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
-
 }
