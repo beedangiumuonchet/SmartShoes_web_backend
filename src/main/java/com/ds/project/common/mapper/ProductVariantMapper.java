@@ -43,6 +43,7 @@ public class ProductVariantMapper {
                 .colorName(variant.getColor() != null ? variant.getColor().getName() : null)
                 .size(variant.getSize())
                 .price(variant.getPrice() != null ? variant.getPrice() : 0.0)
+                .priceSale(variant.getPriceSale() != null ? variant.getPriceSale() : 0.0)
                 .stock(variant.getStock() != null ? variant.getStock() : 0)
                 .images(variant.getImages() != null
                         ? variant.getImages().stream()

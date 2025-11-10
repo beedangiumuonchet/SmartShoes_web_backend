@@ -339,6 +339,22 @@ public class ProductService implements IProductService {
     }
 
     /**
+     * Get product detail by slug
+     */
+    @Override
+    public ProductResponse getProductBySlug(String slug) {
+        try {
+            Product product = productRepository.findBySlug(slug)
+                    .orElseThrow(() -> new RuntimeException("Product not found with slug: " + slug));
+            return productMapper.mapToDto(product);
+        } catch (Exception e) {
+            log.error("Error fetching product by slug {}: {}", slug, e.getMessage(), e);
+            throw new RuntimeException("Failed to get product by slug: " + e.getMessage());
+        }
+    }
+
+
+    /**
      * Get products by Brand ID with filter & pagination
      */
     public PaginationResponse<ProductResponse> getProductsByBrand(String brandId, ProductFilterRequest filter) {

@@ -71,6 +71,21 @@ public class ProductController {
     }
 
     /**
+     * ✅ Get product detail by Slug
+     */
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<?> getProductBySlug(@PathVariable String slug) {
+        try {
+            ProductResponse product = productService.getProductBySlug(slug);
+            log.info("🔍 Fetched product detail for slug: {}", slug);
+            return ResponseEntity.ok(product);
+        } catch (Exception e) {
+            log.error("❌ Failed to get product by slug {}: {}", slug, e.getMessage());
+            return ResponseEntity.badRequest().body("Product not found or error occurred: " + e.getMessage());
+        }
+    }
+
+    /**
      * Get products by Brand ID with optional filters and pagination
      */
     @GetMapping("/brand/{brandId}")

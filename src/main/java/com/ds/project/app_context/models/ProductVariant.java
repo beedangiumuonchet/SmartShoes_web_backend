@@ -37,8 +37,17 @@ public class ProductVariant {
     private String size;
 
     private Double price;
+    private Double priceSale;
+
     private Integer stock;
 
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (this.priceSale == null) {
+            this.priceSale = this.price; // Giá sale mặc định bằng giá gốc khi tạo
+        }
+    }
 }
