@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -293,103 +295,124 @@ public class UserService implements IUserService {
     public BaseResponse<UserDto> assignRole(String userId, String roleId) {
         try {
             log.info("Assigning role {} to user {}", roleId, userId);
-            
+
+            // 1️⃣ Lấy user còn sống
             User user = userRepository.findById(userId)
-                .filter(u -> !u.getDeleted())
-                .orElse(null);
-            
+                    .filter(u -> !u.getDeleted())
+                    .orElse(null);
+
             if (user == null) {
                 return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User not found with id: " + userId))
-                    .build();
+                        .message(Optional.of("User not found with id: " + userId))
+                        .build();
             }
-            
-            Role role = roleRepository.findById(roleId)
-                .filter(r -> !r.getDeleted())
-                .orElse(null);
-            
-            if (role == null) {
+
+            // 2️⃣ Lấy role mới
+            Role newRole = roleRepository.findById(roleId)
+                    .filter(r -> !r.getDeleted())
+                    .orElse(null);
+
+            if (newRole == null) {
                 return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("Role not found with id: " + roleId))
-                    .build();
+                        .message(Optional.of("Role not found with id: " + roleId))
+                        .build();
             }
-            
-            // Check if user already has this role
-            if (userRolesRepository.findByUserAndRole(user, role).isPresent()) {
-                return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User already has role: " + role.getName()))
-                    .build();
+
+            // 3️⃣ Xóa tất cả role cũ của user (nếu muốn chỉ có 1 role)
+            if (user.getUserRoles() != null && !user.getUserRoles().isEmpty()) {
+                userRolesRepository.deleteAll(user.getUserRoles());
+                user.getUserRoles().clear();
             }
-            
+
+            // 4️⃣ Tạo UserRoles mới cho role mới
             UserRoles userRole = UserRoles.builder()
-                .user(user)
-                .role(role)
-                .createdAt(LocalDateTime.now())
-                .build();
-            
+                    .user(user)
+                    .role(newRole)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
             userRolesRepository.save(userRole);
-            user.addRole(role);
-            
+
+            // ⚡ Quan trọng: thêm role mới vào user để mapper thấy
+            if (user.getUserRoles() == null) {
+                user.setUserRoles(new HashSet<>());
+            }
+            user.getUserRoles().add(userRole);
+
+            // 5️⃣ Map về DTO
             UserDto userDto = userMapper.mapToDto(user);
+
             return BaseResponse.<UserDto>builder()
-                .result(Optional.of(userDto))
-                .build();
+                    .result(Optional.of(userDto))
+                    .message(Optional.of("Gán vai trò thành công"))
+                    .build();
+
         } catch (Exception e) {
             log.error("Error assigning role {} to user {}: {}", roleId, userId, e.getMessage(), e);
             return BaseResponse.<UserDto>builder()
-                .message(Optional.of("Failed to assign role: " + e.getMessage()))
-                .build();
+                    .message(Optional.of("Failed to assign role: " + e.getMessage()))
+                    .build();
         }
     }
-    
+
+
+
     @Override
     @Transactional
-    public BaseResponse<UserDto> removeRole(String userId, String roleId) {
+    public BaseResponse<UserDto> removeRole(String userId, String roleName) {
         try {
+            // 1️⃣ Kiểm tra user tồn tại
             User user = userRepository.findById(userId)
-                .filter(u -> !u.getDeleted())
-                .orElse(null);
-            
+                    .filter(u -> !u.getDeleted())
+                    .orElse(null);
+
             if (user == null) {
                 return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User not found with id: " + userId))
-                    .build();
+                        .message(Optional.of("User not found with id: " + userId))
+                        .result(Optional.empty())
+                        .build();
             }
-            
-            Role role = roleRepository.findById(roleId)
-                .filter(r -> !r.getDeleted())
-                .orElse(null);
-            
+
+            // 2️⃣ Tìm role theo TÊN thay vì ID
+            Role role = roleRepository.findByName(roleName)
+                    .filter(r -> !r.getDeleted())
+                    .orElse(null);
+
             if (role == null) {
                 return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("Role not found with id: " + roleId))
-                    .build();
+                        .message(Optional.of("Role not found with name: " + roleName))
+                        .build();
             }
-            
+
+            // 3️⃣ Kiểm tra user có role đó không
             UserRoles userRole = userRolesRepository.findByUserAndRole(user, role)
-                .orElse(null);
-            
+                    .orElse(null);
+
             if (userRole == null) {
                 return BaseResponse.<UserDto>builder()
-                    .message(Optional.of("User does not have role: " + role.getName()))
-                    .build();
+                        .message(Optional.of("User does not have role: " + role.getName()))
+                        .build();
             }
-            
+
+            // 4️⃣ Xóa role khỏi user
             userRolesRepository.delete(userRole);
             user.removeRole(role);
-            
+
+            // 5️⃣ Trả lại DTO
             UserDto userDto = userMapper.mapToDto(user);
             return BaseResponse.<UserDto>builder()
-                .result(Optional.of(userDto))
-                .build();
+                    .result(Optional.of(userDto))
+                    .build();
+
         } catch (Exception e) {
-            log.error("Error removing role {} from user {}: {}", roleId, userId, e.getMessage(), e);
+            log.error("Error removing role {} from user {}: {}", roleName, userId, e.getMessage(), e);
             return BaseResponse.<UserDto>builder()
-                .message(Optional.of("Failed to remove role: " + e.getMessage()))
-                .build();
+                    .message(Optional.of("Failed to remove role: " + e.getMessage()))
+                    .build();
         }
     }
-    
+
+
     @Override
     @Transactional(readOnly = true)
     public boolean hasRole(String userId, String roleName) {
@@ -397,7 +420,6 @@ public class UserService implements IUserService {
             User user = userRepository.findById(userId)
                 .filter(u -> !u.getDeleted())
                 .orElse(null);
-            
             if (user == null) {
                 log.warn("User not found with id: {}", userId);
                 return false;
