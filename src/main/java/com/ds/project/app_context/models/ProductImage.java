@@ -2,9 +2,10 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product_image")
@@ -14,9 +15,11 @@ import java.sql.Types;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductImage {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
     private String url;
@@ -28,4 +31,8 @@ public class ProductImage {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_variant_id")
     private ProductVariant productVariant;
+
+    // 🖼 Vector embedding của ảnh (PostgreSQL double precision array)
+    @Column(name = "embedding", columnDefinition = "double precision[]")
+    private Double[] embedding; // Lưu vector sau khi xử lý ảnh
 }

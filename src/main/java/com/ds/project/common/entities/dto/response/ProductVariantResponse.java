@@ -17,6 +17,7 @@ public class ProductVariantResponse {
     private String colorName;
     private String size;
     private Double price;
+    private Double priceSale;
     private Integer stock;
     // 🔹 Danh sách ảnh của variant
     private List<ProductImageResponse> images;
