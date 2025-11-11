@@ -3,9 +3,8 @@ package com.ds.project.app_context.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.sql.Types;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,9 +17,9 @@ import java.time.LocalDateTime;
 public class Address {
 
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, nullable = false, updatable = false)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
     private String id;
 
     @Column(name = "full_name", nullable = false)

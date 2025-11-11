@@ -27,6 +27,8 @@ public interface IProductService {
      */
     ProductResponse getProductById(String id);
 
+    ProductResponse getProductBySlug(String slug);
+
     PaginationResponse<ProductResponse> getProductsByBrand(String brandId, ProductFilterRequest filter);
     PaginationResponse<ProductResponse> getProductsByCategory(String categoryId, ProductFilterRequest filter);
 }

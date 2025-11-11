@@ -12,5 +12,6 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, String>, JpaSpecificationExecutor<Product> {
     Optional<Product> findByNameIgnoreCase(String name);
     Optional<Product> findBySlug(String slug);
+
 }
 

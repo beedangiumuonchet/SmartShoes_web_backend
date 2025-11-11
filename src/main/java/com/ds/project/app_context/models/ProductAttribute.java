@@ -2,9 +2,7 @@ package com.ds.project.app_context.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.sql.Types;
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Table(name = "product_attributes")
@@ -14,9 +12,11 @@ import java.sql.Types;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductAttribute {
+
     @Id
-    @JdbcTypeCode(Types.VARCHAR)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
     @ManyToOne
