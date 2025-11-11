@@ -10,6 +10,7 @@ import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.application.annotations.PublicRoute;
 import com.ds.project.common.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -104,17 +105,20 @@ public class UserController {
                 org.springframework.http.HttpStatus.BAD_REQUEST);
         }
     }
-    
-    @DeleteMapping("/{userId}/roles/{roleId}")
+
+    @DeleteMapping("/{userId}/roles/{roleName}")
     @AuthRequired
-    public ResponseEntity<Map<String, Object>> removeRole(@PathVariable String userId, @PathVariable String roleId) {
-        BaseResponse<UserDto> response = userService.removeRole(userId, roleId);
-        
-        if (response.getResult().isPresent()) {
+    public ResponseEntity<Map<String, Object>> removeRole(@PathVariable String userId, @PathVariable String roleName) {
+        BaseResponse<UserDto> response = userService.removeRole(userId, roleName);
+
+        if (response != null && response.getResult() != null && response.getResult().isPresent()) {
             return ResponseUtils.success(response.getResult().get());
         } else {
-            return ResponseUtils.error(response.getMessage().orElse("Failed to remove role"), 
-                org.springframework.http.HttpStatus.BAD_REQUEST);
+            String message = (response != null && response.getMessage().isPresent())
+                    ? response.getMessage().get()
+                    : "Failed to remove role";
+            return ResponseUtils.error(message, HttpStatus.BAD_REQUEST);
         }
     }
+
 }
