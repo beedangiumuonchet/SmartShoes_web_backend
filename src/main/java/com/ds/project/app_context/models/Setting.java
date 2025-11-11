@@ -20,10 +20,10 @@ public class Setting {
     @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
-    @Column(name = "`key`", nullable = false)
+    @Column(name = "key", nullable = false)
     private String key;
 
-    @Column(name = "`group`", nullable = false)
+    @Column(name = "group", nullable = false)
     private String group;
 
     @Column(nullable = false, columnDefinition = "TEXT")
