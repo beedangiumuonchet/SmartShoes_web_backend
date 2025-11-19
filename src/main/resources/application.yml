@@ -23,7 +23,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/shoesstore_db
     username: postgres
-    password: 2211
+    password: 123456
     hikari:
       maximum-pool-size: 10
   jpa:
@@ -89,8 +89,11 @@ momo:
 
   # Request Type
   request-type: payWithMethod
-# 🚀 Google Drive Configuration
-gdrive:
-  customer-id: 717175626277-eir81eb76aa3c0bgaut9oe9ut7selmn5.apps.googleusercontent.com
-  customer-secret: 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
-  redirect-uri: http://localhost:8080/drive/oauth2/callback
+## 🚀 Google Drive Configuration
+#gdrive:
+#  customer-id: 717175626277-eir81eb76aa3c0bgaut9oe9ut7selmn5.apps.googleusercontent.com
+#  customer-secret: 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
+#  redirect-uri: http://localhost:8080/drive/oauth2/callback
+python:
+  api:
+    url: http://127.0.0.1:8000/search
