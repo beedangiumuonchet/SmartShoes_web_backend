@@ -14,6 +14,7 @@ public class CartDetailDto {
     private String productVariantId;
     private Integer quantity;
     private Double price;
+    private Double priceSale;
     private Double subtotal;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

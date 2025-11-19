@@ -1,9 +1,12 @@
 package com.ds.project.application.controllers.v1;
 
+import com.ds.project.business.v1.services.AiSearchService;
 import com.ds.project.business.v1.services.ProductService;
 import com.ds.project.common.entities.common.PaginationResponse;
+import com.ds.project.common.entities.dto.request.AiSearchRequest;
 import com.ds.project.common.entities.dto.request.ProductFilterRequest;
 import com.ds.project.common.entities.dto.request.ProductRequest;
+import com.ds.project.common.entities.dto.response.AiSearchResponse;
 import com.ds.project.common.entities.dto.response.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -12,7 +15,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST Controller for Product
@@ -24,6 +29,7 @@ public class ProductController {
 
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
+    private final AiSearchService aiService;
 
     /**
      * Create a new Product
@@ -118,6 +124,17 @@ public class ProductController {
         } catch (Exception e) {
             log.error("❌ Failed to fetch products by Category {}: {}", categoryId, e.getMessage());
             return ResponseEntity.internalServerError().body("Failed to get products by category: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/ai/search")
+    public ResponseEntity<?> searchAi(@RequestBody AiSearchRequest req) {
+        try {
+            AiSearchResponse response = aiService.searchAi(req);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("❌ AI search failed: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body("AI search error: " + e.getMessage());
         }
     }
 
