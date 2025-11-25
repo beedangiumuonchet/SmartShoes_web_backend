@@ -25,7 +25,7 @@ public class ProductVariant {
     @Column(columnDefinition = "varchar", nullable = false, updatable = false)
     private String id;
 
-    @ManyToOne
+    @ManyToOne  
     @JoinColumn(name = "product_id")
     private Product product;
 

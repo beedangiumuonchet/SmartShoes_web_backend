@@ -40,6 +40,7 @@ public class ProductVariantMapper {
     public ProductVariantResponse mapToDto(ProductVariant variant) {
         return ProductVariantResponse.builder()
                 .id(variant.getId())
+                .colorId(variant.getColor().getId())
                 .colorName(variant.getColor() != null ? variant.getColor().getName() : null)
                 .size(variant.getSize())
                 .price(variant.getPrice() != null ? variant.getPrice() : 0.0)

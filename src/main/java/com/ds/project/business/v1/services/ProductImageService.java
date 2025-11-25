@@ -41,7 +41,7 @@ public class ProductImageService implements IProductImageService {
         ProductImage entity = productImageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ảnh sản phẩm với id: " + id));
 
-        entity.setUrl(request.getUrl());
+//        entity.setUrl(request.getUrl());
         entity.setIsMain(request.getIsMain());
 
         ProductImage updated = productImageRepository.save(entity);

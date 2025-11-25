@@ -18,6 +18,7 @@ public interface IProductService {
      */
     ProductResponse createProduct(ProductRequest request);
 
+    ProductResponse updateProduct(String productId, ProductRequest request);
     /**
      * Get all products
      */
