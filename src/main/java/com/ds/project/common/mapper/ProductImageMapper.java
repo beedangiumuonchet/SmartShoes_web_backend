@@ -13,7 +13,6 @@ public class ProductImageMapper {
     public ProductImage mapToEntity(ProductImageRequest request) {
         if (request == null) return null;
         return ProductImage.builder()
-                .url(request.getUrl())
                 .isMain(request.getIsMain())
                 .build();
     }
