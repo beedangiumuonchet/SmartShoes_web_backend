@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductVariantRequest {
+    private String id;
 
     @NotBlank(message = "Color ID is required")
     private String colorId;

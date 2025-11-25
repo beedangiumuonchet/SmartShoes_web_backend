@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ProductVariantResponse {
     private String id;
+    private String colorId;
     private String colorName;
     private String size;
     private Double price;
