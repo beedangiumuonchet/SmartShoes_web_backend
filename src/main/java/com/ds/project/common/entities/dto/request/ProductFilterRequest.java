@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -25,5 +26,19 @@ public class ProductFilterRequest extends PaginationRequest {
     private Double maxPrice;
 
     private Boolean inStock; // true = còn hàng, false = hết hàng
+
+    private List<String> brandIds;
+    private List<String> categoryIds;
+
+    private List<String> colorIds;
+    private List<String> sizes;
+
+    private List<String> attributeIds;
+    private String attributeKey;
+    private String attributeValue;
+
+    private String sortBy;         // "createdAt" hoặc "price"
+    private String sortDirection;  // "asc" hoặc "desc"
+
 
 }
