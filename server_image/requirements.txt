@@ -1,0 +1,20 @@
+flask
+flask-cors
+joblib
+nltk==3.8.1
+scikit-learn
+scipy
+transformers
+langdetect
+sentencepiece
+torch
+PyPDF2
+python-docx
+# underthesea
+pymupdf
+torchvision
+mysql-connector-python
+sentence-transformers
+faiss-cpu
+pandas
+numpy<2.0  # Pin to numpy 1.x for pickle compatibility with semantic_search_model.pkl
