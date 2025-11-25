@@ -13,4 +13,6 @@ public class ProductImageResponse {
     private String id;
     private String url;
     private Boolean isMain;
+    private String productVariantId;
+//    private Double[] embedding;
 }
