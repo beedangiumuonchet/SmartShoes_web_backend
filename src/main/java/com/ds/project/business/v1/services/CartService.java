@@ -104,16 +104,31 @@ public class CartService implements ICartService {
             if (existingOpt.isPresent()) {
                 detail = existingOpt.get();
                 detail.setQuantity(detail.getQuantity() + request.getQuantity());
-                detail.setSubtotal(detail.getPrice() * detail.getQuantity());
+                // --- SỬA LỖI TÍNH TOÁN SUBTOTAL CHO ENTITY ---
+                ProductVariant pv = detail.getProductVariant();
+
+                // 1. Xác định giá hiệu lực (Effective Price)
+                double effectivePrice = (pv.getPriceSale() != null && pv.getPriceSale() < pv.getPrice())
+                        ? pv.getPriceSale()
+                        : pv.getPrice();
+
+                // 2. CẬP NHẬT SUBTOTAL DÙNG GIÁ HIỆU LỰC
+                detail.setSubtotal(effectivePrice * detail.getQuantity());
+                // ----------------------------------------------
+
                 detail.setUpdatedAt(LocalDateTime.now());
             } else {
                 double unitPrice = variant.getPrice() != null ? variant.getPrice() : 0.0;
+                double effectivePrice = (variant.getPriceSale() != null && variant.getPriceSale() < variant.getPrice())
+                        ? variant.getPriceSale()
+                        : variant.getPrice();
+
                 detail = CartDetail.builder()
                         .cart(cart)
                         .productVariant(variant)
                         .quantity(request.getQuantity())
                         .price(unitPrice)
-                        .subtotal(unitPrice * request.getQuantity())
+                        .subtotal(effectivePrice * request.getQuantity())
                         .build();
                 cart.getDetails().add(detail);
             }
@@ -150,7 +165,15 @@ public class CartService implements ICartService {
             }
 
             detail.setQuantity(request.getQuantity());
-            detail.setSubtotal(detail.getPrice() * detail.getQuantity());
+
+            ProductVariant pv = detail.getProductVariant(); // Lấy variant hiện tại
+
+            // 1. Xác định giá hiệu lực (Effective Price)
+            double effectivePrice = (pv.getPriceSale() != null && pv.getPriceSale() < pv.getPrice())
+                    ? pv.getPriceSale()
+                    : pv.getPrice();
+
+            detail.setSubtotal(effectivePrice * detail.getQuantity());
             detail.setUpdatedAt(LocalDateTime.now());
             cartDetailRepository.save(detail);
 

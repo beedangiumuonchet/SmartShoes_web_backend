@@ -1,13 +1,10 @@
 package com.ds.project.application.controllers.v1;
 
-import com.ds.project.app_context.models.ProductImage;
-import com.ds.project.app_context.repositories.ProductImageRepository;
-import com.ds.project.business.v1.services.CbirService;
 import com.ds.project.business.v1.services.ProductService;
 import com.ds.project.common.entities.common.PaginationResponse;
+import com.ds.project.common.entities.dto.request.AiSearchRequest;
 import com.ds.project.common.entities.dto.request.ProductFilterRequest;
 import com.ds.project.common.entities.dto.request.ProductRequest;
-import com.ds.project.common.entities.dto.response.ProductImageResponse;
 import com.ds.project.common.entities.dto.response.ProductResponse;
 import com.ds.project.common.entities.dto.response.ProductVariantWithProductResponse;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST Controller for Product
@@ -35,8 +32,6 @@ public class ProductController {
 
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
-    private final CbirService cbirService;
-    private final ProductImageRepository productImageRepository;
 
     /**
      * Create a new Product
@@ -214,6 +209,17 @@ public ResponseEntity<List<ProductResponse>> searchSimilarImages(
 }
 
 
+
+    @PostMapping("/ai/search")
+    public ResponseEntity<?> searchAi(@RequestBody AiSearchRequest req) {
+        try {
+            AiSearchResponse response = aiService.searchAi(req);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("❌ AI search failed: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body("AI search error: " + e.getMessage());
+        }
+    }
 
 }
 
