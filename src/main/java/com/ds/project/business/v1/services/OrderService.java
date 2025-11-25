@@ -57,9 +57,22 @@ public class OrderService implements IOrderService {
                         .build();
             }
 
-            double price = variant.getPrice();
+            Double salePrice = variant.getPriceSale();
+            Double regularPrice = variant.getPrice();
             int quantity = request.getQuantity();
-            double subtotal = price * quantity;
+
+            double price; // Giá đơn vị cho OrderDetail
+
+            // Logic ưu tiên giá Sale nếu nó tồn tại (khác null) và thấp hơn giá gốc
+            if (salePrice != null && regularPrice != null && salePrice < regularPrice) {
+                price = salePrice;
+            } else {
+                // Nếu giá Sale null/cao hơn/không tồn tại, dùng giá gốc.
+                // Xử lý cả trường hợp giá gốc cũng null để tránh NPE
+                price = (regularPrice != null) ? regularPrice : 0.0;
+            }
+
+            double subtotal = price * quantity; // Tính subtotal bằng giá hiệu lực
 
             Order order = Order.builder()
                     .user(user)
@@ -147,7 +160,18 @@ public class OrderService implements IOrderService {
             for (CartDetail cd : cartDetails) {
                 ProductVariant pv = cd.getProductVariant();
                 int qty = cd.getQuantity();
-                double price = pv.getPrice();
+                // 1. KIỂM TRA VÀ GÁN GIÁ HIỆU LỰC (Effective Price)
+                Double salePrice = pv.getPriceSale();
+                Double regularPrice = pv.getPrice();
+
+                // Nếu giá sale là null HOẶC giá sale cao hơn giá gốc, dùng giá gốc.
+                // Nếu không, dùng giá sale.
+                double price;
+                if (salePrice == null || regularPrice == null || salePrice >= regularPrice) {
+                    price = (regularPrice != null ? regularPrice : 0.0); // Fallback về giá gốc (hoặc 0 nếu giá gốc cũng null)
+                } else {
+                    price = salePrice; // Dùng giá sale
+                }
                 double subtotal = price * qty;
 
                 OrderDetail od = OrderDetail.builder()
@@ -311,7 +335,7 @@ public class OrderService implements IOrderService {
             OrderStatus next = request.getStatus();
 
             boolean allowed = switch (current) {
-                case PENDING -> next == OrderStatus.PAID;
+                case PENDING -> next == OrderStatus.PAID || next == OrderStatus.CONFIRMED ;
                 case PAID -> next == OrderStatus.CONFIRMED;
                 case CONFIRMED -> next == OrderStatus.SHIPPING;
                 case SHIPPING -> next == OrderStatus.DELIVERED;
@@ -350,9 +374,9 @@ public class OrderService implements IOrderService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found"));
 
-            if (!(order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.CONFIRMED)) {
+            if (!(order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CONFIRMED)) {
                 return BaseResponse.<OrderDto>builder()
-                        .message(Optional.of("Only PENDING or CONFIRMED orders can be cancelled"))
+                        .message(Optional.of("Only PENDING, PAID, CONFIRMED orders can be cancelled"))
                         .result(Optional.empty())
                         .build();
             }

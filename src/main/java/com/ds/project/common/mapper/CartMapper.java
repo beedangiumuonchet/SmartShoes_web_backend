@@ -31,6 +31,7 @@ public class CartMapper {
                 .productVariantId(detail.getProductVariant() != null ? detail.getProductVariant().getId() : null)
                 .quantity(detail.getQuantity())
                 .price(detail.getPrice())
+                .priceSale(detail.getProductVariant().getPriceSale())
                 .subtotal(detail.getSubtotal())
                 .createdAt(detail.getCreatedAt())
                 .updatedAt(detail.getUpdatedAt())
