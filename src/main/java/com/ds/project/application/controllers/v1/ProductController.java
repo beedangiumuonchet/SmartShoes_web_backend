@@ -6,6 +6,7 @@ import com.ds.project.common.entities.dto.request.AiSearchRequest;
 import com.ds.project.common.entities.dto.request.ProductFilterRequest;
 import com.ds.project.common.entities.dto.request.ProductRequest;
 import com.ds.project.common.entities.dto.response.ProductResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ds.project.common.entities.dto.response.ProductVariantWithProductResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -213,13 +214,24 @@ public ResponseEntity<List<ProductResponse>> searchSimilarImages(
     @PostMapping("/ai/search")
     public ResponseEntity<?> searchAi(@RequestBody AiSearchRequest req) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonReq = mapper.writeValueAsString(req);
+            log.info("Sending AI search request JSON: {}", jsonReq);
+
             AiSearchResponse response = aiService.searchAi(req);
+
+            String jsonResp = mapper.writeValueAsString(response);
+            log.info("Received AI search response JSON: {}", jsonResp);
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("❌ AI search failed: {}", e.getMessage());
-            return ResponseEntity.internalServerError().body("AI search error: " + e.getMessage());
+            log.error("❌ AI search failed", e);
+            return ResponseEntity.internalServerError()
+                    .body("AI search error: " + e.getMessage());
         }
     }
+
+
 
 }
 
