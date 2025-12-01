@@ -10,9 +10,7 @@ import com.ds.project.common.mapper.ProductMapper;
 import com.ds.project.common.mapper.ProductVariantMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -131,6 +129,11 @@ public class ProductService implements IProductService {
 
                         List<ProductImage> variantImages = new ArrayList<>();
                         for (ProductImageRequest imgReq : variantReq.getImages()) {
+                            // ⛔ Bỏ qua ảnh không có file (null hoặc rỗng)
+                            if (imgReq.getFile() == null || imgReq.getFile().isEmpty()) {
+                                log.warn("Skipped image because file is empty or null");
+                                continue;
+                            }
                             // ✅ 6.1 gửi file sang Flask để extract embedding
                             List<CbirService.ImageFeatureResult> extracted =
                                     cbirService.extractImagesAndFeatures(imgReq.getFile());
@@ -314,7 +317,10 @@ public class ProductService implements IProductService {
                 List<ProductImage> newImagesToAdd = new ArrayList<>();
 
                 for (ProductImageRequest imgReq : variantReq.getImages()) {
-
+                    if (imgReq.getFile() == null || imgReq.getFile().isEmpty()) {
+                        log.warn("Skipped image because file is empty or null");
+                        continue;
+                    }
                     // CASE 1: ảnh cũ — cập nhật isMain
                     if (imgReq.getId() != null) {
                         requestImageIds.add(imgReq.getId());
@@ -502,11 +508,27 @@ public class ProductService implements IProductService {
                     predicates.add(cb.lessThanOrEqualTo(variantJoin.get("price"), filter.getMaxPrice()));
                 }
 
-                if (Boolean.TRUE.equals(filter.getInStock())) {
-                    predicates.add(cb.greaterThan(variantJoin.get("stock"), 0));
-                } else if (Boolean.FALSE.equals(filter.getInStock())) {
-                    predicates.add(cb.equal(variantJoin.get("stock"), 0));
+                if (filter.getInStock() != null) {
+
+                    // Subquery để check variant còn hàng
+                    Subquery<Long> sub = query.subquery(Long.class);
+                    Root<ProductVariant> subRoot = sub.from(ProductVariant.class);
+
+                    sub.select(cb.count(subRoot))
+                            .where(
+                                    cb.equal(subRoot.get("product").get("id"), root.get("id")),
+                                    cb.greaterThan(subRoot.get("stock"), 0)
+                            );
+
+                    if (Boolean.TRUE.equals(filter.getInStock())) {
+                        // Sản phẩm còn hàng → có ít nhất 1 variant stock > 0
+                        predicates.add(cb.greaterThan(sub, 0L));
+                    } else {
+                        // Sản phẩm hết hàng → không có variant nào stock > 0
+                        predicates.add(cb.equal(sub, 0L));
+                    }
                 }
+
 
                 if (filter.getColorIds() != null && !filter.getColorIds().isEmpty()) {
                     predicates.add(variantJoin.get("color").get("id").in(filter.getColorIds()));
