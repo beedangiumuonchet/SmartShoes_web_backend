@@ -10,5 +10,6 @@ import lombok.*;
 public class PromotionProductResponse {
     private String id;
     private String promotionId;
-    private String productVariantId;
+    private String status;
+    private ProductVariantWithProductResponse productVariant;
 }
