@@ -39,7 +39,7 @@ public class Payment {
     @Column(nullable = false, length = 50)
     private PaymentStatus status;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     @JsonIgnore
     private Order order;

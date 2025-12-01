@@ -1,10 +1,12 @@
 package com.ds.project.application.controllers.v1;
 
+import com.ds.project.business.v1.services.AiSearchService;
 import com.ds.project.business.v1.services.ProductService;
 import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.request.AiSearchRequest;
 import com.ds.project.common.entities.dto.request.ProductFilterRequest;
 import com.ds.project.common.entities.dto.request.ProductRequest;
+import com.ds.project.common.entities.dto.response.AiSearchResponse;
 import com.ds.project.common.entities.dto.response.ProductResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ds.project.common.entities.dto.response.ProductVariantWithProductResponse;
@@ -33,6 +35,7 @@ public class ProductController {
 
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
+    private final AiSearchService aiService;
 
     /**
      * Create a new Product
