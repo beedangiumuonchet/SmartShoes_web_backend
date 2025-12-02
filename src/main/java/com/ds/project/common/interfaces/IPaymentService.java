@@ -19,6 +19,6 @@ public interface IPaymentService {
     BaseResponse<PaymentDto> paymentReturn(String transactionId);
     // ========== GET ALL (phân trang + filter) ==========
     PaginationResponse<PaymentDto> getAllPayments(PaymentFilterRequest filter);
-
+    BaseResponse<List<PaymentDto>> getPaymentsByOrderId(String orderId);
     BaseResponse<PaymentDto> getPaymentById(String paymentId);
 }

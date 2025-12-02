@@ -86,10 +86,16 @@ public class PaymentService implements IPaymentService {
         String requestType = momoConfig.getRequestType();
         String createEndpoint = momoConfig.getCreateEndpoint();
         try {
-            // 1. Tạo record Payment (PENDING)
+            // 1. Lấy order
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
+            // 2. Chỉ tạo payment nếu order.status = PENDING
+            if (order.getStatus() != com.ds.project.common.enums.OrderStatus.PENDING) {
+                return BaseResponse.error("Chỉ tạo payment cho đơn hàng đang PENDING");
+            }
+
+            // 3. Tạo Payment mới
             Payment payment = Payment.builder()
                     .amount(amount)
                     .paymentMethod(PaymentMethod.MOMO)
@@ -100,7 +106,6 @@ public class PaymentService implements IPaymentService {
                     .build();
             paymentRepository.save(payment);
 
-            // 2. Tạo chữ ký và request gửi MoMo
             String requestId = UUID.randomUUID().toString();
             String extraData = "";
             String orderInfo = "Thanh toán MoMo cho đơn hàng #" + orderId;
@@ -153,6 +158,7 @@ public class PaymentService implements IPaymentService {
             return BaseResponse.error("Lỗi tạo MoMo payment: " + e.getMessage());
         }
     }
+
 
     // ========== HANDLE MOMO IPN ==========
     @Override
@@ -333,4 +339,33 @@ public class PaymentService implements IPaymentService {
                     .build();
         }
     }
+
+    @Override
+    public BaseResponse<List<PaymentDto>> getPaymentsByOrderId(String orderId) {
+        try {
+            // kiểm tra order tồn tại
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            // lấy tất cả payment thuộc order
+            List<Payment> payments = paymentRepository.findByOrderId(orderId);
+
+            List<PaymentDto> dtos = payments.stream()
+                    .map(paymentMapper::mapToDto)
+                    .toList();
+
+            return BaseResponse.<List<PaymentDto>>builder()
+                    .result(Optional.of(dtos))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error in getPaymentsByOrderId: {}", e.getMessage(), e);
+
+            return BaseResponse.<List<PaymentDto>>builder()
+                    .message(Optional.of("Failed to get payments: " + e.getMessage()))
+                    .result(Optional.empty())
+                    .build();
+        }
+    }
+
 }

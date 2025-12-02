@@ -5,10 +5,7 @@ import com.ds.project.app_context.repositories.*;
 import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.OrderDto;
-import com.ds.project.common.entities.dto.request.BuyNowRequest;
-import com.ds.project.common.entities.dto.request.FromCartRequest;
-import com.ds.project.common.entities.dto.request.OrderFilterRequest;
-import com.ds.project.common.entities.dto.request.UpdateStatusRequest;
+import com.ds.project.common.entities.dto.request.*;
 import com.ds.project.common.enums.OrderStatus;
 import com.ds.project.common.interfaces.IOrderService;
 import com.ds.project.common.mapper.OrderMapper;
@@ -366,6 +363,40 @@ public class OrderService implements IOrderService {
                     .build();
         }
     }
+
+    public BaseResponse<OrderDto> updateShipping(String orderId, UpdateShippingRequest request) {
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            // Chỉ cho phép thay đổi khi PENDING hoặc PAID
+            if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PAID) {
+                return BaseResponse.<OrderDto>builder()
+                        .message(Optional.of("Cannot update shipping info for this order status"))
+                        .result(Optional.empty())
+                        .build();
+            }
+
+            order.setShippingName(request.getShippingName());
+            order.setShippingPhone(request.getShippingPhone());
+            order.setShippingAddress(request.getShippingAddress());
+            order.setUpdatedAt(LocalDateTime.now());
+
+            Order saved = orderRepository.save(order);
+
+            return BaseResponse.<OrderDto>builder()
+                    .result(Optional.of(orderMapper.mapToDto(saved)))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error in updateShipping: {}", e.getMessage(), e);
+            return BaseResponse.<OrderDto>builder()
+                    .message(Optional.of("Failed to update shipping info: " + e.getMessage()))
+                    .result(Optional.empty())
+                    .build();
+        }
+    }
+
 
     // =============== CANCEL ORDER ===============
     @Override

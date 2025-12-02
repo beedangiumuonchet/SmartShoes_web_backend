@@ -1,5 +1,8 @@
 package com.ds.project.application.controllers.v1;
 
+import com.ds.project.app_context.models.Payment;
+import com.ds.project.app_context.repositories.OrderRepository;
+import com.ds.project.app_context.repositories.PaymentRepository;
 import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.common.PaginationResponse;
@@ -10,11 +13,15 @@ import com.ds.project.common.entities.dto.request.CreatePaymentRequest;
 import com.ds.project.common.entities.dto.request.PaymentFilterRequest;
 import com.ds.project.common.entities.dto.response.HandleMomoIpnRequest;
 import com.ds.project.common.entities.dto.response.MomoPaymentResponse;
+import com.ds.project.common.enums.PaymentStatus;
 import com.ds.project.common.interfaces.IPaymentService;
 import com.ds.project.common.utils.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +39,9 @@ import java.util.Map;
 public class PaymentController {
 
     private final IPaymentService paymentService;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     private static final Logger log = LoggerFactory.getLogger(OrderController.class);
     private String getCurrentUserId() {
@@ -98,12 +108,31 @@ public class PaymentController {
      * User return after Momo payment (redirect). Dùng query param transactionId
      */
     @GetMapping("/momo/return")
-    public ResponseEntity<Map<String, Object>> paymentReturn(@RequestParam("transactionId") String transactionId) {
-        BaseResponse<PaymentDto> resp = paymentService.paymentReturn(transactionId);
-        return resp.getResult().isPresent()
-                ? ResponseUtils.success(resp.getResult().get(), "Payment info")
-                : ResponseUtils.error(resp.getMessage().orElse("Failed to fetch payment"),
-                org.springframework.http.HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, Object>> paymentReturn(@RequestParam("orderId") String orderId) {
+        try {
+            Payment payment = paymentRepository.findByTransactionId(orderId)
+                    .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+            String redirectUrl;
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                // Redirect đến trang chi tiết order
+                redirectUrl = "http://localhost:5173/orders/" + payment.getOrder().getId();
+            } else {
+                // Redirect đến trang thất bại
+                redirectUrl = "http://localhost:5173/payments/payment-failed";
+            }
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, redirectUrl)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("paymentReturn error: {}", e.getMessage(), e);
+            // Redirect về trang thất bại nếu có lỗi
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, "http://localhost:5173/payments/payment-failed")
+                    .build();
+        }
     }
 
     @AuthRequired
@@ -127,4 +156,17 @@ public class PaymentController {
                 : ResponseUtils.error(resp.getMessage().orElse("Failed to get payment"),
                 org.springframework.http.HttpStatus.BAD_REQUEST);
     }
+
+    @AuthRequired
+    @GetMapping("/{orderId}/payments")
+    public ResponseEntity<Map<String, Object>> getPaymentsByOrderId(@PathVariable String orderId) {
+
+        BaseResponse<List<PaymentDto>> response = paymentService.getPaymentsByOrderId(orderId);
+
+        return response.getResult().isPresent()
+                ? ResponseUtils.success(response.getResult().get())
+                : ResponseUtils.error(response.getMessage().orElse("Failed to get payments"),
+                HttpStatus.BAD_REQUEST);
+    }
+
 }

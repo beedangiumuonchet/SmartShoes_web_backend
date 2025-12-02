@@ -5,10 +5,7 @@ import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.common.UserPayload;
 import com.ds.project.common.entities.dto.OrderDto;
-import com.ds.project.common.entities.dto.request.BuyNowRequest;
-import com.ds.project.common.entities.dto.request.FromCartRequest;
-import com.ds.project.common.entities.dto.request.OrderFilterRequest;
-import com.ds.project.common.entities.dto.request.UpdateStatusRequest;
+import com.ds.project.common.entities.dto.request.*;
 import com.ds.project.common.interfaces.IOrderService;
 import com.ds.project.common.utils.ResponseUtils;
 import lombok.RequiredArgsConstructor;
@@ -121,6 +118,20 @@ public class OrderController {
                 : ResponseUtils.error(response.getMessage().orElse("Failed to update status"),
                 org.springframework.http.HttpStatus.BAD_REQUEST);
     }
+
+    @AuthRequired
+    @PutMapping("/{orderId}/shipping")
+    public ResponseEntity<Map<String, Object>> updateShipping(
+            @PathVariable String orderId,
+            @Valid @RequestBody UpdateShippingRequest request) {
+
+        BaseResponse<OrderDto> response = orderService.updateShipping(orderId, request);
+        return response.getResult().isPresent()
+                ? ResponseUtils.success(response.getResult().get(), "Shipping info updated successfully")
+                : ResponseUtils.error(response.getMessage().orElse("Failed to update shipping info"),
+                org.springframework.http.HttpStatus.BAD_REQUEST);
+    }
+
 
     @AuthRequired
     @PutMapping("/{orderId}/cancel")

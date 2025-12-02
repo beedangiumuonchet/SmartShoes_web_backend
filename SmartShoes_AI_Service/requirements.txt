@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pandas
+sentence-transformers
+faiss-cpu
+numpy
+torch
+transformers
+requests
+pydantic
+rapidfuzz
