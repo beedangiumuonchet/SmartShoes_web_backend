@@ -60,3 +60,4 @@ hs_err_pid*
 replay_pid*
 SmartShoes_AI_Service/venv/
 SmartShoes_AI_Service/data/
+*.safetensors
