@@ -204,7 +204,9 @@ public class ProductService implements IProductService {
     @Override
     @Transactional
     public ProductResponse updateProduct(String productId, ProductRequest request) {
+
         try {
+
             // 🔹 1. Lấy product hiện tại
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -277,7 +279,7 @@ public class ProductService implements IProductService {
                 ProductVariant variant;
 
                 // 5.1 — UPDATE VARIANT CŨ
-                if (variantReq.getId() != null) {
+                if (variantReq.getId() != null && !variantReq.getId().isBlank()) {
                     variant = existingVariants.stream()
                             .filter(v -> v.getId().equals(variantReq.getId()))
                             .findFirst()
@@ -315,56 +317,52 @@ public class ProductService implements IProductService {
 
 // DANH SÁCH ẢNH MỚI (để add thêm vào currentImages)
                 List<ProductImage> newImagesToAdd = new ArrayList<>();
+                if (variantReq.getImages() != null) {
+                    for (ProductImageRequest imgReq : variantReq.getImages()) {
+                        // CASE 1: ảnh cũ — cập nhật isMain
+                        if (imgReq.getId() != null) {
+                            requestImageIds.add(imgReq.getId());
 
-                for (ProductImageRequest imgReq : variantReq.getImages()) {
-                    if (imgReq.getFile() == null || imgReq.getFile().isEmpty()) {
-                        log.warn("Skipped image because file is empty or null");
-                        continue;
-                    }
-                    // CASE 1: ảnh cũ — cập nhật isMain
-                    if (imgReq.getId() != null) {
-                        requestImageIds.add(imgReq.getId());
+                            ProductImage oldImg = currentImages.stream()
+                                    .filter(i -> i.getId().equals(imgReq.getId()))
+                                    .findFirst()
+                                    .orElseThrow(() -> new RuntimeException("Image not found: " + imgReq.getId()));
 
-                        ProductImage oldImg = currentImages.stream()
-                                .filter(i -> i.getId().equals(imgReq.getId()))
-                                .findFirst()
-                                .orElseThrow(() -> new RuntimeException("Image not found: " + imgReq.getId()));
+                            oldImg.setIsMain(imgReq.getIsMain());
+                            continue;
+                        }
 
-                        oldImg.setIsMain(imgReq.getIsMain());
-                        continue;
-                    }
+                        // CASE 2: ảnh mới upload
+                        if (imgReq.getFile() != null && !imgReq.getFile().isEmpty()) {
 
-                    // CASE 2: ảnh mới upload
-                    if (imgReq.getFile() != null) {
+                            List<CbirService.ImageFeatureResult> extracted =
+                                    cbirService.extractImagesAndFeatures(imgReq.getFile());
 
-                        List<CbirService.ImageFeatureResult> extracted =
-                                cbirService.extractImagesAndFeatures(imgReq.getFile());
+                            if (extracted.isEmpty())
+                                throw new RuntimeException("Failed to extract embedding");
 
-                        if (extracted.isEmpty())
-                            throw new RuntimeException("Failed to extract embedding");
+                            String uploadedUrl = googleDriveService.uploadFile(imgReq.getFile());
 
-                        String uploadedUrl = googleDriveService.uploadFile(imgReq.getFile());
+                            ProductImage newImg = ProductImage.builder()
+                                    .url(uploadedUrl)
+                                    .isMain(imgReq.getIsMain())
+                                    .productVariant(variant)
+                                    .embedding(extracted.get(0).getFeatures().toArray(new Double[0]))
+                                    .build();
 
-                        ProductImage newImg = ProductImage.builder()
-                                .url(uploadedUrl)
-                                .isMain(imgReq.getIsMain())
-                                .productVariant(variant)
-                                .embedding(extracted.get(0).getFeatures().toArray(new Double[0]))
-                                .build();
+                            ProductImage savedImg = productImageRepository.save(newImg);
 
-                        ProductImage savedImg = productImageRepository.save(newImg);
+                            cbirService.pushFeatureToFlask(
+                                    savedImg.getId(),
+                                    variant.getId(),
+                                    savedImg.getUrl(),
+                                    savedImg.getEmbedding()
+                            );
 
-                        cbirService.pushFeatureToFlask(
-                                savedImg.getId(),
-                                variant.getId(),
-                                savedImg.getUrl(),
-                                savedImg.getEmbedding()
-                        );
-
-                        newImagesToAdd.add(savedImg);
+                            newImagesToAdd.add(savedImg);
+                        }
                     }
                 }
-
 // CASE 3: xoá ảnh không còn trong request
                 currentImages.removeIf(oldImg -> {
                     if (oldImg.getId() != null && !requestImageIds.contains(oldImg.getId())) {
@@ -875,76 +873,63 @@ public class ProductService implements IProductService {
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteProduct(String productId) {
+        try {
+            // 1️⃣ Lấy product
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            // 2️⃣ Kiểm tra variant có đang được sử dụng không
+            for (ProductVariant variant : product.getVariants()) {
+                boolean used = checkVariantUsage(variant);
+                if (used) {
+                    throw new RuntimeException(
+                            "Cannot delete product because variant " + variant.getId() + " is being used"
+                    );
+                }
+            }
+
+            // 3️⃣ Xoá toàn bộ variant (kèm ảnh)
+            for (ProductVariant variant : product.getVariants()) {
+
+                // XÓA ẢNH + EMBEDDING
+                for (ProductImage img : variant.getImages()) {
+                    try {
+                        // ❌ Xoá file Google Drive
+//                        googleDriveService.deleteFile(img.getUrl());
+
+                        // ❌ Xoá embedding bên Flask
+//                        cbirService.removeFeature(img.getId());
+
+                        // ❌ Xoá ảnh DB
+                        productImageRepository.delete(img);
+                    } catch (Exception e) {
+                        log.error("Failed to delete image: {}", img.getId(), e);
+                    }
+                }
+
+                // Xoá Variant
+                productVariantRepository.delete(variant);
+            }
+
+            // 4️⃣ Xoá attributes
+            productAttributeRepository.deleteAll(product.getProductAttributes());
+
+            // 5️⃣ Xoá product
+            productRepository.delete(product);
+
+            log.info("✅ Deleted product {} successfully", productId);
+
+        } catch (Exception e) {
+            log.error("❌ Failed to delete product {}: {}", productId, e);
+            throw new RuntimeException("Failed to delete product: " + e.getMessage());
+        }
+    }
+
 
     @Transactional
-//    public List<ProductImageResponse> searchSimilarImages(MultipartFile file) {
-//        JsonNode response = cbirService.searchImage(file);
-//
-//        List<ProductImageResponse> results = new ArrayList<>();
-//
-//        for (JsonNode item : response.get("results")) {
-//            String imageId = item.has("id") && !item.get("id").isNull()
-//                    ? item.get("id").asText()
-//                    : null;
-//
-//            ProductImage productImage = null;
-//            if (imageId != null) {
-//                try {
-//                    productImage = productImageRepository.findById(imageId)
-//                            .orElse(null);
-//                } catch (Exception e) {
-//                    System.out.println("ProductImage not found for ID: " + imageId);
-//                }
-//            }
-//
-//            results.add(ProductImageResponse.builder()
-//                    .id(productImage != null ? productImage.getId() : null)
-//                    .url(productImage != null ? productImage.getUrl() : item.get("imagePath").asText())
-//                    .productVariantId(productImage != null && productImage.getProductVariant() != null
-//                            ? productImage.getProductVariant().getId()
-//                            : null)
-////                    .embedding(productImage != null ? productImage.getEmbedding() : null)
-//                    .build());
-//        }
-//
-//        return results;
-//    }
-//    public List<ProductVariantWithProductResponse> searchSimilarImages(MultipartFile file) {
-//        // Gọi CBIR service để tìm ảnh tương tự
-//        JsonNode response = cbirService.searchImage(file);
-//
-//        List<ProductVariantWithProductResponse> results = new ArrayList<>();
-//
-//        for (JsonNode item : response.get("results")) {
-//            String imageId = item.has("id") && !item.get("id").isNull()
-//                    ? item.get("id").asText()
-//                    : null;
-//
-//            if (imageId == null) continue; // bỏ qua nếu không có id
-//
-//            ProductImage productImage = null;
-//            try {
-//                productImage = productImageRepository.findById(imageId).orElse(null);
-//            } catch (Exception e) {
-//                System.out.println("ProductImage not found for ID: " + imageId);
-//            }
-//
-//            if (productImage != null && productImage.getProductVariant() != null) {
-//                String variantId = productImage.getProductVariant().getId();
-//
-//                // Lấy variant + product
-//                ProductVariantWithProductResponse variantWithProduct =
-//                        productVariantService.getVariantWithProductById(variantId);
-//
-//                results.add(variantWithProduct);
-//            }
-//        }
-//
-//        return results;
-//    }
-
-
-
     // 2️⃣ Sửa hàm searchSimilarImages để trả về danh sách ProductResponse duy nhất
     public List<ProductResponse> searchSimilarImages(MultipartFile file) {
         JsonNode response = cbirService.searchImage(file);

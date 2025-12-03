@@ -1,5 +1,6 @@
 package com.ds.project.application.controllers.v1;
 
+import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.business.v1.services.AiSearchService;
 import com.ds.project.business.v1.services.ProductService;
 import com.ds.project.common.entities.common.PaginationResponse;
@@ -40,6 +41,7 @@ public class ProductController {
     /**
      * Create a new Product
      */
+//    @AuthRequired
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(@ModelAttribute ProductRequest request) {
         try {
@@ -54,13 +56,14 @@ public class ProductController {
     /**
      * Update an existing Product by ID
      */
+//    @AuthRequired
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
             @ModelAttribute ProductRequest request
     ) {
         try {
-            log.info("🔄 Updating product ID: {}", id);
+            log.info("🔄 Updating product ID: {}", request);
             ProductResponse updatedProduct = productService.updateProduct(id, request);
             log.info("✅ Updated product successfully: {}", updatedProduct.getName());
             return ResponseEntity.ok(updatedProduct);
@@ -152,8 +155,15 @@ public class ProductController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable String id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.ok("Deleted successfully");
+    }
 
-//    @PostMapping("/search-image")
+
+
+    //    @PostMapping("/search-image")
 //    @Transactional
 //    public ResponseEntity<List<ProductImageResponse>> searchSimilarImages(
 //            @RequestParam("file") MultipartFile file) {
