@@ -1,5 +1,6 @@
 package com.ds.project.application.controllers.v1;
 
+import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.common.entities.dto.request.PromotionProductRequest;
 import com.ds.project.common.entities.dto.response.PromotionProductResponse;
 import com.ds.project.common.interfaces.IPromotionProductService;
@@ -20,6 +21,7 @@ public class PromotionProductController {
 
     private final IPromotionProductService promotionProductService;
 
+    @AuthRequired
     @PostMapping
     public ResponseEntity<PromotionProductResponse> create(@Valid @RequestBody PromotionProductRequest request) {
         return ResponseEntity.ok(promotionProductService.create(request));
