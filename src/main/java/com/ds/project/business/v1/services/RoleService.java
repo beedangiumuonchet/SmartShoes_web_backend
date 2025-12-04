@@ -217,8 +217,8 @@ public class RoleService implements IRoleService {
                 .updatedAt(LocalDateTime.now())
                 .build(),
             Role.builder()
-                .name("MANAGER")
-                .description("Manager role with limited administrative access")
+                .name("USER")
+                .description("User Client role with client")
                 .deleted(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())

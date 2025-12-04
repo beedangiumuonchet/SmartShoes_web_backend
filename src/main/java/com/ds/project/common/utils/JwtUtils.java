@@ -35,12 +35,14 @@ public class JwtUtils {
      */
     public String generateToken(UserPayload userPayload, boolean rememberMe) {
         try {
-            long expirationTime = getExpirationTime(rememberMe);
+            long expirationTime = getExpirationTime(rememberMe); // seconds
             long currentTime = Instant.now().getEpochSecond();
-            
+
+            long expEpoch = currentTime + expirationTime;
+
             userPayload.setIat(currentTime);
-            userPayload.setExp(currentTime + expirationTime);
-            
+            userPayload.setExp(expEpoch);
+
             Map<String, Object> claims = new HashMap<>();
             claims.put("userId", userPayload.getUserId());
             claims.put("username", userPayload.getUsername());
@@ -54,18 +56,22 @@ public class JwtUtils {
             claims.put("roles", userPayload.getRoles());
             claims.put("iat", userPayload.getIat());
             claims.put("exp", userPayload.getExp());
-            
+
+            // 🔥 IMPORTANT: Set JWT `iat` & `exp` as standard fields
             return Jwts.builder()
                     .claims(claims)
+                    .issuedAt(Date.from(Instant.ofEpochSecond(currentTime)))
+                    .expiration(Date.from(Instant.ofEpochSecond(expEpoch)))
                     .signWith(getSigningKey())
                     .compact();
-                    
+
         } catch (Exception e) {
             log.error("Error generating JWT token: {}", e.getMessage());
             throw new RuntimeException("Failed to generate JWT token", e);
         }
     }
-    
+
+
     /**
      * Validate JWT token
      */
