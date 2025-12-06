@@ -84,31 +84,31 @@ public class UserStartup {
         
         try {
             // Check if MANAGER role exists
-            if (roleService.getRoleByName("MANAGER").isEmpty()) {
-                log.error("MANAGER role not found. Please ensure roles are initialized first.");
+            if (roleService.getRoleByName("USER").isEmpty()) {
+                log.error("USER role not found. Please ensure roles are initialized first.");
                 return;
             }
             
             for (int i = 0; i <= 20; i++) {
-                String email = String.format("manager%d@mail.mail", i);
-                String username = String.format("manager%d", i);
+                String email = String.format("user%d@mail.mail", i);
+                String username = String.format("user%d", i);
                 
                 try {
                     // Check if user already exists
                     if (userService.getUserByEmail(email).isPresent()) {
-                        log.info("Manager user already exists: {}", email);
+                        log.info("User already exists: {}", email);
                         continue;
                     }
 
-                    // Set roles for the user, first user is admin, other users are manager
-                    Set<String> roles = i == 0 ? Set.of("ADMIN") : Set.of("MANAGER");
+                    // Set roles for the user, first user is admin, other users are USER
+                    Set<String> roles = i == 0 ? Set.of("ADMIN") : Set.of("USER");
                     
                     // Create manager user using business service
                     UserRequest managerRequest = UserRequest.builder()  
                         .email(email)
                         .username(username)
-                        .firstName("Manager")
-                        .lastName(String.format("User %d", i))
+                        .firstName("User")
+                        .lastName(String.format("Client %d", i))
                         .gender(com.ds.project.common.enums.GenderStatus.MALE)
                         .phoneNumber(String.format("012345678%d", i))
                         .status(com.ds.project.common.enums.UserStatus.ACTIVE)
@@ -117,10 +117,10 @@ public class UserStartup {
                         .build();
                     
                     userService.createUser(managerRequest);
-                    log.info("Successfully created manager user: {}", email);
+                    log.info("Successfully created user: {}", email);
                     
                 } catch (Exception e) {
-                    log.error("Failed to create manager user {}: {}", email, e.getMessage(), e);
+                    log.error("Failed to create user {}: {}", email, e.getMessage(), e);
                 }
             }
         } catch (Exception e) {
