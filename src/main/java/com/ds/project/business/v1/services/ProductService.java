@@ -154,8 +154,10 @@ public class ProductService implements IProductService {
 
                             // ✅ 6.3 save image + embedding vào DB
 
-                            Double[] embeddingArray = extractedImg.getFeatures()
-                                    .toArray(new Double[0]);
+                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
+                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
+                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
+                            }
 
                             ProductImage image = ProductImage.builder()
                                     .url(uploadedUrl)
@@ -297,6 +299,9 @@ public class ProductService implements IProductService {
                     existingVariants.add(variant);
                 }
 
+                // Update price sale
+                variant.setPriceSale(variant.getPrice());
+
                 // ID variant trong request
                 requestVariantIds.add(variant.getId());
 
@@ -341,13 +346,19 @@ public class ProductService implements IProductService {
                             if (extracted.isEmpty())
                                 throw new RuntimeException("Failed to extract embedding");
 
-                            String uploadedUrl = googleDriveService.uploadFile(imgReq.getFile());
+                            CbirService.ImageFeatureResult extractedImg = extracted.get(0);
 
+                            String uploadedUrl = googleDriveService.uploadFile(imgReq.getFile());
+                            // Convert List<Double> → float[]
+                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
+                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
+                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
+                            }
                             ProductImage newImg = ProductImage.builder()
                                     .url(uploadedUrl)
                                     .isMain(imgReq.getIsMain())
                                     .productVariant(variant)
-                                    .embedding(extracted.get(0).getFeatures().toArray(new Double[0]))
+                                    .embedding(embeddingArray)
                                     .build();
 
                             ProductImage savedImg = productImageRepository.save(newImg);

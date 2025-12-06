@@ -35,7 +35,7 @@ def load_features_from_db():
 
         features.append({
             "id": row["id"],
-            "imageUrl": row["url"],
+            "imagePath": row["url"],
             "productVariantId": row["product_variant_id"],
             "featureVector": emb
         })

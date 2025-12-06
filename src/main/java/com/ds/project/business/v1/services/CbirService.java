@@ -86,7 +86,7 @@ public class CbirService {
         }
     }
 
-    public void pushFeatureToFlask(String id, String productVariantId, String imagePath, Double[] features) {
+    public void pushFeatureToFlask(String id, String productVariantId, String imagePath, float[] features) {
         String url = apiUrl + "/add-features";
         try {
             HttpHeaders headers = new HttpHeaders();

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +67,9 @@ public class ProductImageService implements IProductImageService {
 
     @Override
     public ProductImageResponse getById(String id) {
+        Optional<ProductImage> img = productImageRepository.findById(id);
+        System.out.println("Found? " + img.isPresent());
+
         ProductImage entity = productImageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ảnh sản phẩm với id: " + id));
         return productImageMapper.mapToDto(entity);

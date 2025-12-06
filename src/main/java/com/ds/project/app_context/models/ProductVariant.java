@@ -29,7 +29,7 @@ public class ProductVariant {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "color_id", nullable = false)
     private Color color;
 
@@ -41,10 +41,11 @@ public class ProductVariant {
 
     private Integer stock;
 
-    @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ProductImage> images = new ArrayList<>();
 
     @PrePersist
+    @PreUpdate
     public void prePersist() {
         if (this.priceSale == null) {
             this.priceSale = this.price; // Giá sale mặc định bằng giá gốc khi tạo

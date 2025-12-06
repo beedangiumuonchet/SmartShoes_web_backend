@@ -1,8 +1,11 @@
 package com.ds.project.app_context.models;
 
+import com.ds.project.app_context.converters.FloatArrayConverter;
+import com.ds.project.app_context.converters.PgVectorType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,11 +31,13 @@ public class ProductImage {
     private Boolean isMain;
 
     // Nếu ảnh liên kết với ProductVariant
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_variant_id")
     private ProductVariant productVariant;
 
     // 🖼 Vector embedding của ảnh (PostgreSQL double precision array)
-    @Column(name = "embedding", columnDefinition = "double precision[]")
-    private Double[] embedding; // Lưu vector sau khi xử lý ảnh
+    @Type(value = PgVectorType.class)
+    @Column(name = "embedding", columnDefinition = "vector(256)")
+//    @Convert(converter = FloatArrayConverter.class)
+    private float[] embedding;
 }
