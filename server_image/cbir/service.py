@@ -78,7 +78,7 @@ def get_latent_features(image_paths, model, transformations):
             with torch.no_grad():
                 latent = model.encoder(tensor)
 
-            latent_np = latent.cpu().numpy().squeeze(0).flatten()
+            latent_np = latent.cpu().numpy().astype(np.float32).squeeze(0).flatten()
             features_list.append(latent_np)
 
         except Exception as e:
@@ -96,8 +96,9 @@ def get_latent_features_img(image_path, model, transformations):
 
         with torch.no_grad():
             latent = model.encoder(tensor)
+            pooled = torch.mean(latent, dim=[2, 3])  # Global Average Pool
+        return pooled.cpu().numpy().astype(np.float32).flatten()
 
-        return latent.cpu().numpy().flatten()
 
     except Exception as e:
         print(f"⚠️ Lỗi ảnh: {image_path} ({e})")
@@ -130,7 +131,7 @@ def perform_search(queryFeatures, db_features, threshold=0.7):
             results.append({
                 "similarity": float(sim),
                 "id": feat.get("id"),
-                "imagePath": feat.get("imageUrl"),
+                "imagePath": feat.get("imagePath"),
                 "productVariantId": feat.get("productVariantId")
             })
 

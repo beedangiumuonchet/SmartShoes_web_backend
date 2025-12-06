@@ -123,9 +123,9 @@ def add_features():
             # Tạo object tương tự ProductImage
             db_features.append({
                 "id": item["id"],                        # ID giống ProductImage.id
-                "url": item.get("url"),                      # URL ảnh đã upload
-                "productVariantId": item.get("documentId") or item.get("variantId"), # liên kết variant
-                "embedding": feature_vec                 # embedding vector
+                "imagePath": item.get("imagePath"),                      # URL ảnh đã upload
+                "productVariantId": item.get("variantId"), # liên kết variant
+                "featureVector": feature_vec                 # embedding vector
             })
             count += 1
         except Exception as e:
