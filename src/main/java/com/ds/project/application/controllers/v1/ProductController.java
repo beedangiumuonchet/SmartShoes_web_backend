@@ -2,6 +2,7 @@ package com.ds.project.application.controllers.v1;
 
 import com.ds.project.application.annotations.AuthRequired;
 import com.ds.project.business.v1.services.AiSearchService;
+import com.ds.project.business.v1.services.EmbeddingService;
 import com.ds.project.business.v1.services.ProductService;
 import com.ds.project.common.entities.common.PaginationResponse;
 import com.ds.project.common.entities.dto.request.AiSearchRequest;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,6 +39,8 @@ public class ProductController {
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
     private final AiSearchService aiService;
+    @Autowired
+    private EmbeddingService embeddingService;
 
     /**
      * Create a new Product
@@ -47,6 +51,8 @@ public class ProductController {
         try {
             ProductResponse response = productService.createProduct(request);
             log.info("✅ Created product successfully: {}", response.getName());
+            // Cập nhật embeddings
+            embeddingService.updateAllEmbeddings();
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("❌ Failed to create product: {}", e.getMessage());
@@ -66,6 +72,8 @@ public class ProductController {
             log.info("🔄 Updating product ID: {}", request);
             ProductResponse updatedProduct = productService.updateProduct(id, request);
             log.info("✅ Updated product successfully: {}", updatedProduct.getName());
+            // Cập nhật embeddings
+            embeddingService.updateAllEmbeddings();
             return ResponseEntity.ok(updatedProduct);
         } catch (Exception e) {
             log.error("❌ Failed to update product {}: {}", id, e.getMessage());
@@ -158,6 +166,8 @@ public class ProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable String id) {
         productService.deleteProduct(id);
+        // Xóa embedding tương ứng trong Python
+        embeddingService.deleteEmbedding(id);
         return ResponseEntity.ok("Deleted successfully");
     }
 
