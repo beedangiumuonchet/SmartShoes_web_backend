@@ -55,28 +55,183 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional
-    public ProductResponse createProduct(ProductRequest request) {
+//    public ProductResponse createProduct(ProductRequest request) {
+//        try {
+//            // 🔹 1. Kiểm tra brand + category tồn tại
+//            Brand brand = brandRepository.findById(request.getBrandId())
+//                    .orElseThrow(() -> new RuntimeException("Brand not found"));
+//            Category category = categoryRepository.findById(request.getCategoryId())
+//                    .orElseThrow(() -> new RuntimeException("Category not found"));
+//
+//            // 🔹 2. Kiểm tra trùng tên sản phẩm
+//            if (productRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
+//                throw new RuntimeException("Product name already exists");
+//            }
+//
+//            // 🔹 3. Sinh slug duy nhất từ name
+//            String baseSlug = generateSlug(request.getName());
+//            String slug = baseSlug;
+//            int counter = 1;
+//            while (productRepository.findBySlug(slug).isPresent()) {
+//                slug = baseSlug + "-" + counter++;
+//            }
+//
+//            // 🔹 4. Tạo đối tượng Product (chưa gắn quan hệ con)
+//            Product product = Product.builder()
+//                    .name(request.getName())
+//                    .description(request.getDescription())
+//                    .brand(brand)
+//                    .category(category)
+//                    .slug(slug)
+//                    .status(Product.Status.valueOf(request.getStatus().toUpperCase()))
+//                    .build();
+//
+//            // 🔹 5. Xử lý danh sách Attributes (đi theo Product)
+//            Set<ProductAttribute> attributes = new HashSet<>();
+//            if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
+//                for (ProductAttributeRequest attrReq : request.getAttributes()) {
+//                    Attribute attribute = attributeRepository.findById(attrReq.getAttributeId())
+//                            .orElseThrow(() -> new RuntimeException("Attribute not found"));
+//
+//                    ProductAttribute pa = ProductAttribute.builder()
+//                            .product(product)
+//                            .attribute(attribute)
+//                            .build();
+//
+//                    attributes.add(pa);
+//                }
+//            }
+//            product.setProductAttributes(attributes);
+//
+//            // 🔹 6. Xử lý danh sách Variants (mỗi variant có thể có ảnh riêng)
+//            Set<ProductVariant> variants = new HashSet<>();
+//            if (request.getVariants() != null && !request.getVariants().isEmpty()) {
+//                for (ProductVariantRequest variantReq : request.getVariants()) {
+//                    Color color = colorRepository.findById(variantReq.getColorId())
+//                            .orElseThrow(() -> new RuntimeException("Color not found"));
+//
+//                    ProductVariant variant = ProductVariant.builder()
+//                            .product(product)
+//                            .color(color)
+//                            .size(variantReq.getSize())
+//                            .price(variantReq.getPrice())
+//                            .stock(variantReq.getStock())
+////                            .sku(variantReq.getSku())
+//                            .build();
+//
+//                    // 🔹 Kiểm tra và gắn danh sách ảnh cho variant
+//                    if (variantReq.getImages() != null && !variantReq.getImages().isEmpty()) {
+//                        long mainCount = variantReq.getImages().stream()
+//                                .filter(ProductImageRequest::getIsMain)
+//                                .count();
+//                        if (mainCount > 1)
+//                            throw new RuntimeException("Each variant can only have one main image");
+//
+//                        List<ProductImage> variantImages = new ArrayList<>();
+//                        for (ProductImageRequest imgReq : variantReq.getImages()) {
+//                            // ⛔ Bỏ qua ảnh không có file (null hoặc rỗng)
+//                            if (imgReq.getFile() == null || imgReq.getFile().isEmpty()) {
+//                                log.warn("Skipped image because file is empty or null");
+//                                continue;
+//                            }
+//                            // ✅ 6.1 gửi file sang Flask để extract embedding
+//                            List<CbirService.ImageFeatureResult> extracted =
+//                                    cbirService.extractImagesAndFeatures(imgReq.getFile());
+//
+//                            System.out.println("File name: " + imgReq.getFile().getOriginalFilename());
+//                            System.out.println("File size: " + imgReq.getFile().getSize());
+//                            System.out.println("Extracted: " + extracted);
+//
+//                            if (extracted.isEmpty())
+//                                throw new RuntimeException("Failed to extract image embeddings");
+//
+//                            CbirService.ImageFeatureResult extractedImg = extracted.get(0);
+//
+//                            // ✅ 6.2 upload ảnh lên storage → nhận url
+//                            String uploadedUrl = googleDriveService.uploadFile(
+//                                    imgReq.getFile()
+//                            );
+//
+//                            // ✅ 6.3 save image + embedding vào DB
+//
+//                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
+//                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
+//                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
+//                            }
+//
+//                            ProductImage image = ProductImage.builder()
+//                                    .url(uploadedUrl)
+//                                    .isMain(imgReq.getIsMain())
+//                                    .productVariant(variant)
+//                                    .embedding(embeddingArray)
+//                                    .build();
+//
+//                            ProductImage savedImg = productImageRepository.save(image);
+//
+//                            log.info("Url: {}", savedImg.getUrl());
+////                             ✅ 6.4 push embedding sang Flask cache/RAM
+//                            cbirService.pushFeatureToFlask(
+//                                    savedImg.getId(),
+//                                    savedImg.getProductVariant().getId(),
+//                                    savedImg.getUrl(),
+//                                    savedImg.getEmbedding()
+//                            );
+//
+//                            variantImages.add(image);
+//                        }
+//                        variant.setImages(variantImages);
+//                    }
+//
+//                    variants.add(variant);
+//                }
+//            }
+//            product.setVariants(variants);
+//
+//            // 🔹 7. Lưu toàn bộ product (cascade sang các bảng con)
+//            Product saved = productRepository.save(product);
+//
+//            log.info("✅ Created product '{}' with {} variants and {} attributes",
+//                    saved.getName(),
+//                    saved.getVariants() != null ? saved.getVariants().size() : 0,
+//                    saved.getProductAttributes() != null ? saved.getProductAttributes().size() : 0);
+//
+//            return productMapper.mapToDto(saved);
+//
+//        } catch (Exception e) {
+//            log.error("❌ Error while creating product: {}", e.getMessage(), e);
+//            throw new RuntimeException("Failed to create product: " + e.getMessage());
+//        }
+//    }
+    public ProductResponse createProduct(ProductRequest request, List<MultipartFile> files) {
+
         try {
-            // 🔹 1. Kiểm tra brand + category tồn tại
+            // ============================================
+            // 🔹 1. VALIDATE brand + category
+            // ============================================
             Brand brand = brandRepository.findById(request.getBrandId())
                     .orElseThrow(() -> new RuntimeException("Brand not found"));
+
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
 
-            // 🔹 2. Kiểm tra trùng tên sản phẩm
+            // ============================================
+            // 🔹 2. CHECK DUPLICATE NAME + GENERATE SLUG
+            // ============================================
             if (productRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
                 throw new RuntimeException("Product name already exists");
             }
 
-            // 🔹 3. Sinh slug duy nhất từ name
             String baseSlug = generateSlug(request.getName());
             String slug = baseSlug;
             int counter = 1;
+
             while (productRepository.findBySlug(slug).isPresent()) {
                 slug = baseSlug + "-" + counter++;
             }
 
-            // 🔹 4. Tạo đối tượng Product (chưa gắn quan hệ con)
+            // ============================================
+            // 🔹 3. TẠO PRODUCT GỐC (chưa gắn variant)
+            // ============================================
             Product product = Product.builder()
                     .name(request.getName())
                     .description(request.getDescription())
@@ -86,129 +241,381 @@ public class ProductService implements IProductService {
                     .status(Product.Status.valueOf(request.getStatus().toUpperCase()))
                     .build();
 
-            // 🔹 5. Xử lý danh sách Attributes (đi theo Product)
+            // ============================================
+            // 🔹 4. ADD ATTRIBUTES
+            // ============================================
             Set<ProductAttribute> attributes = new HashSet<>();
-            if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
+
+            if (request.getAttributes() != null) {
                 for (ProductAttributeRequest attrReq : request.getAttributes()) {
+
                     Attribute attribute = attributeRepository.findById(attrReq.getAttributeId())
                             .orElseThrow(() -> new RuntimeException("Attribute not found"));
 
-                    ProductAttribute pa = ProductAttribute.builder()
-                            .product(product)
-                            .attribute(attribute)
-                            .build();
-
-                    attributes.add(pa);
+                    attributes.add(
+                            ProductAttribute.builder()
+                                    .product(product)
+                                    .attribute(attribute)
+                                    .build()
+                    );
                 }
             }
+
             product.setProductAttributes(attributes);
 
-            // 🔹 6. Xử lý danh sách Variants (mỗi variant có thể có ảnh riêng)
+            // ============================================
+            // 🔹 5. CREATE VARIANTS + IMAGES
+            //     Dùng iterator y như updateProduct
+            // ============================================
             Set<ProductVariant> variants = new HashSet<>();
-            if (request.getVariants() != null && !request.getVariants().isEmpty()) {
-                for (ProductVariantRequest variantReq : request.getVariants()) {
-                    Color color = colorRepository.findById(variantReq.getColorId())
-                            .orElseThrow(() -> new RuntimeException("Color not found"));
 
-                    ProductVariant variant = ProductVariant.builder()
-                            .product(product)
-                            .color(color)
-                            .size(variantReq.getSize())
-                            .price(variantReq.getPrice())
-                            .stock(variantReq.getStock())
-//                            .sku(variantReq.getSku())
-                            .build();
+            Iterator<MultipartFile> fileIterator =
+                    files != null ? files.iterator() : Collections.emptyIterator();
 
-                    // 🔹 Kiểm tra và gắn danh sách ảnh cho variant
-                    if (variantReq.getImages() != null && !variantReq.getImages().isEmpty()) {
-                        long mainCount = variantReq.getImages().stream()
-                                .filter(ProductImageRequest::getIsMain)
-                                .count();
-                        if (mainCount > 1)
-                            throw new RuntimeException("Each variant can only have one main image");
+            for (ProductVariantRequest variantReq : request.getVariants()) {
 
-                        List<ProductImage> variantImages = new ArrayList<>();
-                        for (ProductImageRequest imgReq : variantReq.getImages()) {
-                            // ⛔ Bỏ qua ảnh không có file (null hoặc rỗng)
-                            if (imgReq.getFile() == null || imgReq.getFile().isEmpty()) {
-                                log.warn("Skipped image because file is empty or null");
-                                continue;
-                            }
-                            // ✅ 6.1 gửi file sang Flask để extract embedding
-                            List<CbirService.ImageFeatureResult> extracted =
-                                    cbirService.extractImagesAndFeatures(imgReq.getFile());
+                // ---- 5.1 Tạo variant mới ----
+                Color color = colorRepository.findById(variantReq.getColorId())
+                        .orElseThrow(() -> new RuntimeException("Color not found"));
 
-                            System.out.println("File name: " + imgReq.getFile().getOriginalFilename());
-                            System.out.println("File size: " + imgReq.getFile().getSize());
-                            System.out.println("Extracted: " + extracted);
+                ProductVariant variant = ProductVariant.builder()
+                        .product(product)
+                        .color(color)
+                        .size(variantReq.getSize())
+                        .price(variantReq.getPrice())
+                        .stock(variantReq.getStock())
+                        .build();
 
-                            if (extracted.isEmpty())
-                                throw new RuntimeException("Failed to extract image embeddings");
+                List<ProductImage> newImages = new ArrayList<>();
 
-                            CbirService.ImageFeatureResult extractedImg = extracted.get(0);
+                // ---- 5.2 Xử lý ảnh ----
+                if (variantReq.getImages() != null) {
 
-                            // ✅ 6.2 upload ảnh lên storage → nhận url
-                            String uploadedUrl = googleDriveService.uploadFile(
-                                    imgReq.getFile()
-                            );
+                    for (ProductImageRequest imgReq : variantReq.getImages()) {
 
-                            // ✅ 6.3 save image + embedding vào DB
-
-                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
-                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
-                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
-                            }
-
-                            ProductImage image = ProductImage.builder()
-                                    .url(uploadedUrl)
-                                    .isMain(imgReq.getIsMain())
-                                    .productVariant(variant)
-                                    .embedding(embeddingArray)
-                                    .build();
-
-                            ProductImage savedImg = productImageRepository.save(image);
-
-                            log.info("Url: {}", savedImg.getUrl());
-//                             ✅ 6.4 push embedding sang Flask cache/RAM
-                            cbirService.pushFeatureToFlask(
-                                    savedImg.getId(),
-                                    savedImg.getProductVariant().getId(),
-                                    savedImg.getUrl(),
-                                    savedImg.getEmbedding()
-                            );
-
-                            variantImages.add(image);
+                        // CREATE chỉ có ảnh mới → ảnh cũ không tồn tại
+                        if (!fileIterator.hasNext()) {
+                            throw new RuntimeException("Missing uploaded file for new image");
                         }
-                        variant.setImages(variantImages);
-                    }
 
-                    variants.add(variant);
+                        MultipartFile file = fileIterator.next();
+
+                        if (file == null || file.isEmpty()) {
+                            throw new RuntimeException("Uploaded file is empty");
+                        }
+
+                        // ----- Extract features -----
+                        List<CbirService.ImageFeatureResult> extracted =
+                                cbirService.extractImagesAndFeatures(file);
+
+                        if (extracted == null || extracted.isEmpty()) {
+                            throw new RuntimeException("Failed to extract embedding");
+                        }
+
+                        CbirService.ImageFeatureResult extractedImg = extracted.get(0);
+
+                        // ----- Upload to Google Drive -----
+                        String uploadedUrl = googleDriveService.uploadFile(file);
+
+                        // ----- Convert embedding -----
+                        float[] embedding = new float[extractedImg.getFeatures().size()];
+                        for (int i = 0; i < embedding.length; i++) {
+                            embedding[i] = extractedImg.getFeatures().get(i).floatValue();
+                        }
+
+                        // ----- Save image -----
+                        ProductImage savedImg = productImageRepository.save(
+                                ProductImage.builder()
+                                        .url(uploadedUrl)
+                                        .isMain(imgReq.getIsMain())
+                                        .productVariant(variant)
+                                        .embedding(embedding)
+                                        .build()
+                        );
+
+                        // Push vào Flask
+                        cbirService.pushFeatureToFlask(
+                                savedImg.getId(),
+                                null,
+                                savedImg.getUrl(),
+                                savedImg.getEmbedding()
+                        );
+
+                        newImages.add(savedImg);
+                    }
                 }
+
+                variant.setImages(newImages);
+                variants.add(variant);
             }
+
             product.setVariants(variants);
 
-            // 🔹 7. Lưu toàn bộ product (cascade sang các bảng con)
+            // ============================================
+            // 🔹 6. SAVE PRODUCT (cascade xuống tất cả)
+            // ============================================
             Product saved = productRepository.save(product);
 
-            log.info("✅ Created product '{}' with {} variants and {} attributes",
-                    saved.getName(),
-                    saved.getVariants() != null ? saved.getVariants().size() : 0,
-                    saved.getProductAttributes() != null ? saved.getProductAttributes().size() : 0);
+            log.info("✅ Created product '{}' with {} variants",
+                    saved.getName(), saved.getVariants().size());
 
             return productMapper.mapToDto(saved);
 
         } catch (Exception e) {
-            log.error("❌ Error while creating product: {}", e.getMessage(), e);
+            log.error("❌ Failed to create product: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to create product: " + e.getMessage());
         }
     }
 
+
     @Override
     @Transactional
-    public ProductResponse updateProduct(String productId, ProductRequest request) {
+//    public ProductResponse updateProduct(String productId, ProductRequest request, List<MultipartFile> files) {
+//
+//        Map<String, MultipartFile> newFileMap = new HashMap<>();
+//        if (files != null) {
+//            for (MultipartFile f : files) {
+//                newFileMap.put(f.getOriginalFilename(), f);
+//            }
+//        }
+//
+//        try {
+//
+//            // 🔹 1. Lấy product hiện tại
+//            Product product = productRepository.findById(productId)
+//                    .orElseThrow(() -> new RuntimeException("Product not found"));
+//
+//            // 🔹 2. Kiểm tra brand/category tồn tại
+//            Brand brand = brandRepository.findById(request.getBrandId())
+//                    .orElseThrow(() -> new RuntimeException("Brand not found"));
+//            Category category = categoryRepository.findById(request.getCategoryId())
+//                    .orElseThrow(() -> new RuntimeException("Category not found"));
+//
+//            // 🔹 3. Xử lý đổi tên → đổi slug
+//            if (!product.getName().equalsIgnoreCase(request.getName())) {
+//                if (productRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
+//                    throw new RuntimeException("Product name already exists");
+//                }
+//
+//                String baseSlug = generateSlug(request.getName());
+//                String slug = baseSlug;
+//                int counter = 1;
+//
+//                while (productRepository.findBySlug(slug).isPresent() &&
+//                        !productRepository.findBySlug(slug).get().getId().equals(product.getId())) {
+//                    slug = baseSlug + "-" + counter++;
+//                }
+//
+//                product.setName(request.getName());
+//                product.setSlug(slug);
+//            }
+//
+//            product.setDescription(request.getDescription());
+//            product.setBrand(brand);
+//            product.setCategory(category);
+//
+//            if (request.getStatus() != null) {
+//                product.setStatus(Product.Status.valueOf(request.getStatus().toUpperCase()));
+//            }
+//
+//            // ============================================
+//            // 🔹 4. UPDATE ATTRIBUTES
+//            // ============================================
+//            productAttributeRepository.deleteAll(product.getProductAttributes());
+//
+//            Set<ProductAttribute> newAttributes = new HashSet<>();
+//            if (request.getAttributes() != null) {
+//                for (ProductAttributeRequest attrReq : request.getAttributes()) {
+//                    Attribute attribute = attributeRepository.findById(attrReq.getAttributeId())
+//                            .orElseThrow(() -> new RuntimeException("Attribute not found"));
+//
+//                    ProductAttribute pa = ProductAttribute.builder()
+//                            .product(product)
+//                            .attribute(attribute)
+//                            .build();
+//
+//                    newAttributes.add(pa);
+//                }
+//            }
+//            product.setProductAttributes(newAttributes);
+//
+//            // ============================================
+//            // 🔹 5. UPDATE VARIANTS + IMAGES (THEO LOGIC CREATE)
+//            // ============================================
+//            Set<ProductVariant> existingVariants = product.getVariants() != null
+//                    ? product.getVariants()
+//                    : new HashSet<>();
+//
+//            Set<String> requestVariantIds = new HashSet<>();
+//
+//            for (ProductVariantRequest variantReq : request.getVariants()) {
+//
+//                ProductVariant variant;
+//
+//                // 5.1 — UPDATE VARIANT CŨ
+//                if (variantReq.getId() != null && !variantReq.getId().isBlank()) {
+//                    variant = existingVariants.stream()
+//                            .filter(v -> v.getId().equals(variantReq.getId()))
+//                            .findFirst()
+//                            .orElseThrow(() -> new RuntimeException("Variant not found: " + variantReq.getId()));
+//
+//                    // cập nhật size/stock/price/color
+//                    productVariantService.updateVariant(variant.getId(), variantReq);
+//
+//                }
+//                // 5.2 — CREATE VARIANT MỚI
+//                else {
+//                    ProductVariantResponse created = productVariantService.createVariant(product.getId(), variantReq);
+//                    variant = productVariantRepository.findById(created.getId())
+//                            .orElseThrow(() -> new RuntimeException("Variant create failed"));
+//                    existingVariants.add(variant);
+//                }
+//
+//                // Update price sale
+//                variant.setPriceSale(variant.getPrice());
+//
+//                // ID variant trong request
+//                requestVariantIds.add(variant.getId());
+//
+//                // ============================================
+//                // 🔥 5.3 UPDATE IMAGES (THEO LOGIC CREATE)
+//                // ============================================
+//                // 🔥 ẢNH: update thông minh, không xoá hết như trước
+//                List<ProductImage> currentImages = variant.getImages();
+//
+//// Nếu null thì tạo list rỗng và gán vào variant 1 lần duy nhất
+//                if (currentImages == null) {
+//                    currentImages = new ArrayList<>();
+//                    variant.setImages(currentImages);
+//                }
+//
+//// Tập ID ảnh từ request
+//                Set<String> requestImageIds = new HashSet<>();
+//
+//// DANH SÁCH ẢNH MỚI (để add thêm vào currentImages)
+//                List<ProductImage> newImagesToAdd = new ArrayList<>();
+//                if (variantReq.getImages() != null) {
+//                    for (ProductImageRequest imgReq : variantReq.getImages()) {
+//                        // CASE 1: ảnh cũ — cập nhật isMain
+//                        if (imgReq.getId() != null) {
+//                            requestImageIds.add(imgReq.getId());
+//
+//                            ProductImage oldImg = currentImages.stream()
+//                                    .filter(i -> i.getId().equals(imgReq.getId()))
+//                                    .findFirst()
+//                                    .orElseThrow(() -> new RuntimeException("Image not found: " + imgReq.getId()));
+//
+//                            oldImg.setIsMain(imgReq.getIsMain());
+//                            continue;
+//                        }
+//
+//                        // CASE 2: ảnh mới upload
+//                        // CASE 2: ảnh mới upload
+//// Không có id ⇒ phải tìm file trong danh sách
+//                        Iterator<MultipartFile> fileIterator = files.iterator();
+//
+//                        if (imgReq.getId() == null) { // ảnh mới
+//                            if (!fileIterator.hasNext()) {
+//                                throw new RuntimeException("Missing uploaded file for new image");
+//                            }
+//
+//                            MultipartFile file = fileIterator.next();
+//
+//                            if (file == null || file.isEmpty()) {
+//                                throw new RuntimeException("Uploaded file is empty for new image");
+//                            }
+//
+//                            List<CbirService.ImageFeatureResult> extracted =
+//                                    cbirService.extractImagesAndFeatures(file);
+//
+//                            if (extracted == null || extracted.isEmpty())
+//                                throw new RuntimeException("Failed to extract embedding");
+//
+//                            CbirService.ImageFeatureResult extractedImg = extracted.get(0);
+//
+//                            String uploadedUrl = googleDriveService.uploadFile(file);
+//
+//                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
+//                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
+//                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
+//                            }
+//
+//                            ProductImage newImg = ProductImage.builder()
+//                                    .url(uploadedUrl)
+//                                    .isMain(imgReq.getIsMain())
+//                                    .productVariant(variant)
+//                                    .embedding(embeddingArray)
+//                                    .build();
+//
+//                            ProductImage savedImg = productImageRepository.save(newImg);
+//
+//                            cbirService.pushFeatureToFlask(
+//                                    savedImg.getId(),
+//                                    variant.getId(),
+//                                    savedImg.getUrl(),
+//                                    savedImg.getEmbedding()
+//                            );
+//
+//                            newImagesToAdd.add(savedImg);
+//                        }
+//
+//
+//                    }
+//                }
+//// CASE 3: xoá ảnh không còn trong request
+//                currentImages.removeIf(oldImg -> {
+//                    if (oldImg.getId() != null && !requestImageIds.contains(oldImg.getId())) {
+//
+//                        // Xoá bên flask
+//                        // cbirService.removeFeature(oldImg.getId());
+//
+//                        productImageRepository.delete(oldImg);
+//                        return true; // xoá khỏi list
+//                    }
+//                    return false;
+//                });
+//
+//// Cuối cùng: thêm ảnh mới → vào list cũ
+//                currentImages.addAll(newImagesToAdd);
+//// KHÔNG được gọi variant.setImages()
+//
+//
+//
+//            }
+//
+//            // ============================================
+//            // 🔹 6. XÓA VARIANT KHÔNG CÓ TRONG REQUEST
+//            // ============================================
+//            existingVariants.removeIf(v -> {
+//                if (!requestVariantIds.contains(v.getId())) {
+//                    boolean used = checkVariantUsage(v);
+//                    return !used;  // true → xóa
+//                }
+//                return false;
+//            });
+//
+//            product.setVariants(existingVariants);
+//
+//            // ============================================
+//            // 🔹 7. SAVE PRODUCT
+//            // ============================================
+//            Product saved = productRepository.save(product);
+//
+//            log.info("✅ Updated product '{}': {} variants, {} attributes",
+//                    saved.getName(),
+//                    saved.getVariants().size(),
+//                    saved.getProductAttributes().size());
+//
+//            return productMapper.mapToDto(saved);
+//
+//        } catch (Exception e) {
+//            log.error("❌ Failed to update product {}: {}", productId, e.getMessage(), e);
+//            throw new RuntimeException("Failed to update product: " + e.getMessage());
+//        }
+//    }
+    public ProductResponse updateProduct(String productId, ProductRequest request, List<MultipartFile> files) {
 
         try {
-
             // 🔹 1. Lấy product hiện tại
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -268,13 +675,15 @@ public class ProductService implements IProductService {
             product.setProductAttributes(newAttributes);
 
             // ============================================
-            // 🔹 5. UPDATE VARIANTS + IMAGES (THEO LOGIC CREATE)
+            // 🔹 5. UPDATE VARIANTS + IMAGES
             // ============================================
             Set<ProductVariant> existingVariants = product.getVariants() != null
                     ? product.getVariants()
                     : new HashSet<>();
-
             Set<String> requestVariantIds = new HashSet<>();
+
+            // 🔹 5a. Tạo iterator duy nhất cho tất cả file mới
+            Iterator<MultipartFile> fileIterator = files != null ? files.iterator() : Collections.emptyIterator();
 
             for (ProductVariantRequest variantReq : request.getVariants()) {
 
@@ -287,44 +696,33 @@ public class ProductService implements IProductService {
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Variant not found: " + variantReq.getId()));
 
-                    // cập nhật size/stock/price/color
                     productVariantService.updateVariant(variant.getId(), variantReq);
 
-                }
-                // 5.2 — CREATE VARIANT MỚI
-                else {
+                } else {
+                    // 5.2 — CREATE VARIANT MỚI
                     ProductVariantResponse created = productVariantService.createVariant(product.getId(), variantReq);
                     variant = productVariantRepository.findById(created.getId())
                             .orElseThrow(() -> new RuntimeException("Variant create failed"));
                     existingVariants.add(variant);
                 }
 
-                // Update price sale
                 variant.setPriceSale(variant.getPrice());
-
-                // ID variant trong request
                 requestVariantIds.add(variant.getId());
 
-                // ============================================
-                // 🔥 5.3 UPDATE IMAGES (THEO LOGIC CREATE)
-                // ============================================
-                // 🔥 ẢNH: update thông minh, không xoá hết như trước
+                // 5.3 — UPDATE IMAGES
                 List<ProductImage> currentImages = variant.getImages();
-
-// Nếu null thì tạo list rỗng và gán vào variant 1 lần duy nhất
                 if (currentImages == null) {
                     currentImages = new ArrayList<>();
                     variant.setImages(currentImages);
                 }
 
-// Tập ID ảnh từ request
                 Set<String> requestImageIds = new HashSet<>();
-
-// DANH SÁCH ẢNH MỚI (để add thêm vào currentImages)
                 List<ProductImage> newImagesToAdd = new ArrayList<>();
+
                 if (variantReq.getImages() != null) {
                     for (ProductImageRequest imgReq : variantReq.getImages()) {
-                        // CASE 1: ảnh cũ — cập nhật isMain
+
+                        // CASE 1: ảnh cũ
                         if (imgReq.getId() != null) {
                             requestImageIds.add(imgReq.getId());
 
@@ -337,75 +735,63 @@ public class ProductService implements IProductService {
                             continue;
                         }
 
-                        // CASE 2: ảnh mới upload
-                        if (imgReq.getFile() != null && !imgReq.getFile().isEmpty()) {
-
-                            List<CbirService.ImageFeatureResult> extracted =
-                                    cbirService.extractImagesAndFeatures(imgReq.getFile());
-
-                            if (extracted.isEmpty())
-                                throw new RuntimeException("Failed to extract embedding");
-
-                            CbirService.ImageFeatureResult extractedImg = extracted.get(0);
-
-                            String uploadedUrl = googleDriveService.uploadFile(imgReq.getFile());
-                            // Convert List<Double> → float[]
-                            float[] embeddingArray = new float[extractedImg.getFeatures().size()];
-                            for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
-                                embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
-                            }
-                            ProductImage newImg = ProductImage.builder()
-                                    .url(uploadedUrl)
-                                    .isMain(imgReq.getIsMain())
-                                    .productVariant(variant)
-                                    .embedding(embeddingArray)
-                                    .build();
-
-                            ProductImage savedImg = productImageRepository.save(newImg);
-
-                            cbirService.pushFeatureToFlask(
-                                    savedImg.getId(),
-                                    variant.getId(),
-                                    savedImg.getUrl(),
-                                    savedImg.getEmbedding()
-                            );
-
-                            newImagesToAdd.add(savedImg);
+                        // CASE 2: ảnh mới
+                        if (!fileIterator.hasNext()) {
+                            throw new RuntimeException("Missing uploaded file for new image");
                         }
+
+                        MultipartFile file = fileIterator.next();
+
+                        if (file == null || file.isEmpty()) {
+                            throw new RuntimeException("Uploaded file is empty for new image");
+                        }
+
+                        List<CbirService.ImageFeatureResult> extracted =
+                                cbirService.extractImagesAndFeatures(file);
+
+                        if (extracted == null || extracted.isEmpty()) {
+                            throw new RuntimeException("Failed to extract embedding");
+                        }
+
+                        CbirService.ImageFeatureResult extractedImg = extracted.get(0);
+                        String uploadedUrl = googleDriveService.uploadFile(file);
+
+                        float[] embeddingArray = new float[extractedImg.getFeatures().size()];
+                        for (int i = 0; i < extractedImg.getFeatures().size(); i++) {
+                            embeddingArray[i] = extractedImg.getFeatures().get(i).floatValue();
+                        }
+
+                        ProductImage newImg = ProductImage.builder()
+                                .url(uploadedUrl)
+                                .isMain(imgReq.getIsMain())
+                                .productVariant(variant)
+                                .embedding(embeddingArray)
+                                .build();
+
+                        ProductImage savedImg = productImageRepository.save(newImg);
+
+                        cbirService.pushFeatureToFlask(
+                                savedImg.getId(),
+                                variant.getId(),
+                                savedImg.getUrl(),
+                                savedImg.getEmbedding()
+                        );
+
+                        newImagesToAdd.add(savedImg);
                     }
                 }
-// CASE 3: xoá ảnh không còn trong request
-                currentImages.removeIf(oldImg -> {
-                    if (oldImg.getId() != null && !requestImageIds.contains(oldImg.getId())) {
 
-                        // Xoá bên flask
-                        // cbirService.removeFeature(oldImg.getId());
+                // CASE 3: xoá ảnh không còn trong request
+                currentImages.removeIf(oldImg -> oldImg.getId() != null && !requestImageIds.contains(oldImg.getId()));
 
-                        productImageRepository.delete(oldImg);
-                        return true; // xoá khỏi list
-                    }
-                    return false;
-                });
-
-// Cuối cùng: thêm ảnh mới → vào list cũ
+                // Thêm ảnh mới
                 currentImages.addAll(newImagesToAdd);
-// KHÔNG được gọi variant.setImages()
-
-
-
             }
 
             // ============================================
             // 🔹 6. XÓA VARIANT KHÔNG CÓ TRONG REQUEST
             // ============================================
-            existingVariants.removeIf(v -> {
-                if (!requestVariantIds.contains(v.getId())) {
-                    boolean used = checkVariantUsage(v);
-                    return !used;  // true → xóa
-                }
-                return false;
-            });
-
+            existingVariants.removeIf(v -> !requestVariantIds.contains(v.getId()) && !checkVariantUsage(v));
             product.setVariants(existingVariants);
 
             // ============================================

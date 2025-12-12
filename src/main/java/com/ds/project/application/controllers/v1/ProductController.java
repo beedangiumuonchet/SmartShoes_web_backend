@@ -41,36 +41,72 @@ public class ProductController {
     /**
      * Create a new Product
      */
-//    @AuthRequired
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createProduct(@ModelAttribute ProductRequest request) {
+    public ResponseEntity<?> createProduct(
+            @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "variantImages", required = false)
+            List<MultipartFile> variantImages
+    ) {
         try {
-            ProductResponse response = productService.createProduct(request);
+            log.info("📥 Create product JSON: {}", request);
+            log.info("🖼 Uploaded images: {}",
+                    variantImages != null ? variantImages.size() : 0
+            );
+
+            ProductResponse response = productService.createProduct(request, variantImages);
+
             log.info("✅ Created product successfully: {}", response.getName());
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("❌ Failed to create product: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Failed to create product: " + e.getMessage());
         }
     }
+
+//    @AuthRequired
+//    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<?> createProduct(@ModelAttribute ProductRequest request) {
+//        try {
+//            ProductResponse response = productService.createProduct(request);
+//            log.info("✅ Created product successfully: {}", response.getName());
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            log.error("❌ Failed to create product: {}", e.getMessage());
+//            return ResponseEntity.badRequest().body("Failed to create product: " + e.getMessage());
+//        }
+//    }
     /**
      * Update an existing Product by ID
      */
 //    @AuthRequired
+//    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<?> updateProduct(
+//            @PathVariable String id,
+//            @ModelAttribute ProductRequest request
+//    ) {
+//        try {
+//            log.info("🔄 Updating product ID: {}", request);
+//            ProductResponse updatedProduct = productService.updateProduct(id, request);
+//            log.info("✅ Updated product successfully: {}", updatedProduct.getName());
+//            return ResponseEntity.ok(updatedProduct);
+//        } catch (Exception e) {
+//            log.error("❌ Failed to update product {}: {}", id, e.getMessage());
+//            return ResponseEntity.badRequest().body("Failed to update product: " + e.getMessage());
+//        }
+//    }
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
-            @ModelAttribute ProductRequest request
+            @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "variantImages", required = false)
+            List<MultipartFile> variantImages
     ) {
-        try {
-            log.info("🔄 Updating product ID: {}", request);
-            ProductResponse updatedProduct = productService.updateProduct(id, request);
-            log.info("✅ Updated product successfully: {}", updatedProduct.getName());
-            return ResponseEntity.ok(updatedProduct);
-        } catch (Exception e) {
-            log.error("❌ Failed to update product {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body("Failed to update product: " + e.getMessage());
-        }
+        log.info("🔄 Update product JSON: {}", request);
+        log.info("🖼 Image files count: {}", variantImages != null ? variantImages.size() : 0);
+
+        ProductResponse updated = productService.updateProduct(id, request, variantImages);
+        return ResponseEntity.ok(updated);
     }
 
 

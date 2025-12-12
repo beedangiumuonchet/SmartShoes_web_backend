@@ -5,6 +5,7 @@ import com.ds.project.common.entities.dto.request.ProductFilterRequest;
 import com.ds.project.common.entities.dto.request.ProductRequest;
 import com.ds.project.common.entities.dto.response.ProductResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,9 +17,9 @@ public interface IProductService {
     /**
      * Create a new product
      */
-    ProductResponse createProduct(ProductRequest request);
+    ProductResponse createProduct(ProductRequest request,  List<MultipartFile> files);
 
-    ProductResponse updateProduct(String productId, ProductRequest request);
+    ProductResponse updateProduct(String productId, ProductRequest request, List<MultipartFile> files);
     /**
      * Get all products
      */

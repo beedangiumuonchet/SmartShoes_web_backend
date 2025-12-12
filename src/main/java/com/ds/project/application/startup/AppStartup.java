@@ -20,7 +20,7 @@ public class AppStartup implements CommandLineRunner {
     private final RoleStartup roleStartup;
     private final UserStartup userStartup;
     private final SettingStartup settingStartup;
-    private final ProductStartup productStartup;
+//    private final ProductStartup productStartup;
 
     @Override
     public void run(String... args) {
@@ -31,7 +31,7 @@ public class AppStartup implements CommandLineRunner {
             initializeRoles();
             initializeUsers();
             initializeSettings();
-            initializeProducts();
+//            initializeProducts();
 
             log.info("Application startup process completed successfully");
         } catch (Exception e) {
@@ -58,9 +58,9 @@ public class AppStartup implements CommandLineRunner {
         log.info("Settings initialized");
     }
 
-    @Async
-    public void initializeProducts() {
-        productStartup.initializeProductBaseData();
-        log.info("Products initialized");
-    }
+//    @Async
+//    public void initializeProducts() {
+//        productStartup.initializeProductBaseData();
+//        log.info("Products initialized");
+//    }
 }

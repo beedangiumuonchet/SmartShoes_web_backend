@@ -22,6 +22,7 @@ public class ProductImageRequest {
     private MultipartFile file;
 
     private float[] embedding;
+    private String clientFileName;
 
     private String productVariantId;
 }
