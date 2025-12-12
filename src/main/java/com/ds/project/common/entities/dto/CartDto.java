@@ -13,7 +13,6 @@ import java.util.List;
 public class CartDto {
     private String id;
     private String userId;
-    private Double total;
     private List<CartDetailDto> details;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

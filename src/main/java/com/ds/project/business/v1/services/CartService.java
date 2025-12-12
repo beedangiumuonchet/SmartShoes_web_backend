@@ -65,6 +65,7 @@ public class CartService implements ICartService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
+            // Nếu user đã có giỏ, trả về luôn
             Optional<Cart> existing = cartRepository.findByUser(user);
             if (existing.isPresent()) {
                 return BaseResponse.<CartDto>builder()
@@ -72,15 +73,18 @@ public class CartService implements ICartService {
                         .build();
             }
 
+            // Tạo giỏ mới
             Cart cart = Cart.builder()
                     .user(user)
-                    .total(0.0)
+                    .createdAt(LocalDateTime.now())
                     .build();
 
             Cart saved = cartRepository.save(cart);
+
             return BaseResponse.<CartDto>builder()
                     .result(Optional.of(cartMapper.mapToDto(saved)))
                     .build();
+
         } catch (Exception e) {
             log.error("Error creating cart for user {}: {}", userId, e.getMessage(), e);
             return BaseResponse.<CartDto>builder()
@@ -101,47 +105,31 @@ public class CartService implements ICartService {
             // check existing detail
             Optional<CartDetail> existingOpt = cartDetailRepository.findByCartAndProductVariant(cart, variant);
             CartDetail detail;
+
             if (existingOpt.isPresent()) {
+                // Update số lượng
                 detail = existingOpt.get();
                 detail.setQuantity(detail.getQuantity() + request.getQuantity());
-                // --- SỬA LỖI TÍNH TOÁN SUBTOTAL CHO ENTITY ---
-                ProductVariant pv = detail.getProductVariant();
-
-                // 1. Xác định giá hiệu lực (Effective Price)
-                double effectivePrice = (pv.getPriceSale() != null && pv.getPriceSale() < pv.getPrice())
-                        ? pv.getPriceSale()
-                        : pv.getPrice();
-
-                // 2. CẬP NHẬT SUBTOTAL DÙNG GIÁ HIỆU LỰC
-                detail.setSubtotal(effectivePrice * detail.getQuantity());
-                // ----------------------------------------------
-
                 detail.setUpdatedAt(LocalDateTime.now());
             } else {
-                double unitPrice = variant.getPrice() != null ? variant.getPrice() : 0.0;
-                double effectivePrice = (variant.getPriceSale() != null && variant.getPriceSale() < variant.getPrice())
-                        ? variant.getPriceSale()
-                        : variant.getPrice();
-
+                // Tạo mới
                 detail = CartDetail.builder()
                         .cart(cart)
                         .productVariant(variant)
                         .quantity(request.getQuantity())
-                        .price(unitPrice)
-                        .subtotal(effectivePrice * request.getQuantity())
+                        .createdAt(LocalDateTime.now())
                         .build();
+
                 cart.getDetails().add(detail);
             }
 
-            // recalc cart total
-            double total = cart.getDetails().stream().mapToDouble(CartDetail::getSubtotal).sum();
-            cart.setTotal(total);
             cart.setUpdatedAt(LocalDateTime.now());
+            cartRepository.save(cart); // cascade sẽ lưu CartDetail
 
-            cartRepository.save(cart); // cascade will save details
             return BaseResponse.<CartDetailDto>builder()
                     .result(Optional.of(cartMapper.mapDetailToDto(detail)))
                     .build();
+
         } catch (Exception e) {
             log.error("Error adding cart detail to cart {}: {}", cartId, e.getMessage(), e);
             return BaseResponse.<CartDetailDto>builder()
@@ -150,45 +138,36 @@ public class CartService implements ICartService {
         }
     }
 
+
     @Override
     public BaseResponse<CartDetailDto> updateCartDetail(String detailId, CartDetailRequest request) {
         try {
             CartDetail detail = cartDetailRepository.findById(detailId)
                     .orElseThrow(() -> new RuntimeException("CartDetail not found"));
 
-            // optionally validate productVariant id matches (if provided)
-            if (request.getProductVariantId() != null && !request.getProductVariantId().equals(detail.getProductVariant().getId())) {
+            // Nếu muốn chuyển sang ProductVariant khác
+            if (request.getProductVariantId() != null &&
+                    !request.getProductVariantId().equals(detail.getProductVariant().getId())) {
+
                 ProductVariant variant = productVariantRepository.findById(request.getProductVariantId())
                         .orElseThrow(() -> new RuntimeException("ProductVariant not found"));
+
                 detail.setProductVariant(variant);
-                detail.setPrice(variant.getPrice() != null ? variant.getPrice() : detail.getPrice());
             }
 
+            // Cập nhật số lượng
             detail.setQuantity(request.getQuantity());
-
-            ProductVariant pv = detail.getProductVariant(); // Lấy variant hiện tại
-
-            // 1. Xác định giá hiệu lực (Effective Price)
-            double effectivePrice = (pv.getPriceSale() != null && pv.getPriceSale() < pv.getPrice())
-                    ? pv.getPriceSale()
-                    : pv.getPrice();
-
-            detail.setSubtotal(effectivePrice * detail.getQuantity());
             detail.setUpdatedAt(LocalDateTime.now());
-            cartDetailRepository.save(detail);
 
-            // update cart total
-            Cart cart = detail.getCart();
-            double total = cart.getDetails().stream().mapToDouble(CartDetail::getSubtotal).sum();
-            cart.setTotal(total);
-            cart.setUpdatedAt(LocalDateTime.now());
-            cartRepository.save(cart);
+            cartDetailRepository.save(detail);
 
             return BaseResponse.<CartDetailDto>builder()
                     .result(Optional.of(cartMapper.mapDetailToDto(detail)))
                     .build();
+
         } catch (Exception e) {
             log.error("Error updating cart detail {}: {}", detailId, e.getMessage(), e);
+
             return BaseResponse.<CartDetailDto>builder()
                     .message(Optional.of("Failed to update cart detail: " + e.getMessage()))
                     .build();
@@ -200,14 +179,19 @@ public class CartService implements ICartService {
         try {
             CartDetail detail = cartDetailRepository.findById(detailId)
                     .orElseThrow(() -> new RuntimeException("CartDetail not found"));
+
             Cart cart = detail.getCart();
+
+            // Xóa item khỏi cart
             cart.getDetails().remove(detail);
+
             cart.setUpdatedAt(LocalDateTime.now());
-            // recalc total
-            double total = cart.getDetails().stream().mapToDouble(CartDetail::getSubtotal).sum();
-            cart.setTotal(total);
-            cartRepository.save(cart); // will remove detail due to orphanRemoval = true
+
+            // orphanRemoval = true sẽ tự động xóa CartDetail trong DB
+            cartRepository.save(cart);
+
             log.info("Deleted cart detail {}", detailId);
+
         } catch (Exception e) {
             log.error("Error deleting cart detail {}: {}", detailId, e.getMessage(), e);
             throw new RuntimeException("Failed to delete cart detail: " + e.getMessage());
@@ -219,11 +203,16 @@ public class CartService implements ICartService {
         try {
             Cart cart = cartRepository.findById(cartId)
                     .orElseThrow(() -> new RuntimeException("Cart not found"));
+
+            // Xóa toàn bộ details
             cart.getDetails().clear();
-            cart.setTotal(0.0);
+
             cart.setUpdatedAt(LocalDateTime.now());
+
             cartRepository.save(cart);
+
             log.info("Cleared cart {}", cartId);
+
         } catch (Exception e) {
             log.error("Error clearing cart {}: {}", cartId, e.getMessage(), e);
             throw new RuntimeException("Failed to clear cart: " + e.getMessage());

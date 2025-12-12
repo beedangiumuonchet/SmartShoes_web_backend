@@ -113,15 +113,28 @@ public class OrderService implements IOrderService {
 
     // =============== FROM CART ===============
     @Override
+    @Transactional
     public BaseResponse<OrderDto> fromCart(String userId, FromCartRequest request) {
         try {
+
+            // 1. Lấy user
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
+            // 2. Lấy cart + kiểm tra quyền sở hữu
             Cart cart = cartRepository.findById(request.getCartId())
                     .orElseThrow(() -> new RuntimeException("Cart not found"));
 
+            if (!cart.getUser().getId().equals(userId)) {
+                return BaseResponse.<OrderDto>builder()
+                        .message(Optional.of("Không thể đặt hàng từ giỏ của người khác"))
+                        .result(Optional.empty())
+                        .build();
+            }
+
+            // 3. Lấy danh sách cart detail
             List<CartDetail> cartDetails = cartDetailRepository.findByCart(cart);
+
             if (cartDetails == null || cartDetails.isEmpty()) {
                 return BaseResponse.<OrderDto>builder()
                         .message(Optional.of("Giỏ hàng trống"))
@@ -129,19 +142,31 @@ public class OrderService implements IOrderService {
                         .build();
             }
 
-            // Check stock
+            // ================================
+            // 4. Kiểm tra tồn kho TOÀN BỘ (trước khi trừ)
+            // ================================
             for (CartDetail cd : cartDetails) {
+                int qty = cd.getQuantity();
+                if (qty <= 0) {
+                    return BaseResponse.<OrderDto>builder()
+                            .message(Optional.of("Số lượng sản phẩm không hợp lệ"))
+                            .result(Optional.empty())
+                            .build();
+                }
+
                 ProductVariant pv = cd.getProductVariant();
-                if (pv.getStock() == null || pv.getStock() < cd.getQuantity()) {
+                if (pv.getStock() == null || pv.getStock() < qty) {
                     return BaseResponse.<OrderDto>builder()
                             .message(Optional.of("Sản phẩm " +
-                                    (pv.getProduct() != null ? pv.getProduct().getName() : "") +
-                                    " vượt quá tồn kho"))
+                                    pv.getProduct().getName() + " vượt quá tồn kho"))
                             .result(Optional.empty())
                             .build();
                 }
             }
 
+            // ================================
+            // 5. Tạo order
+            // ================================
             Order order = Order.builder()
                     .user(user)
                     .status(OrderStatus.PENDING)
@@ -151,25 +176,19 @@ public class OrderService implements IOrderService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            double total = 0.0;
-            List<OrderDetail> details = new ArrayList<>();
+            List<OrderDetail> orderDetails = new ArrayList<>();
+            double totalAmount = 0.0;
 
+            // ================================
+            // 6. Chuyển CartDetail → OrderDetail
+            // ================================
             for (CartDetail cd : cartDetails) {
+
                 ProductVariant pv = cd.getProductVariant();
                 int qty = cd.getQuantity();
-                // 1. KIỂM TRA VÀ GÁN GIÁ HIỆU LỰC (Effective Price)
-                Double salePrice = pv.getPriceSale();
-                Double regularPrice = pv.getPrice();
+                double price = calculateEffectivePrice(pv); // ⭐ dùng hàm riêng
 
-                // Nếu giá sale là null HOẶC giá sale cao hơn giá gốc, dùng giá gốc.
-                // Nếu không, dùng giá sale.
-                double price;
-                if (salePrice == null || regularPrice == null || salePrice >= regularPrice) {
-                    price = (regularPrice != null ? regularPrice : 0.0); // Fallback về giá gốc (hoặc 0 nếu giá gốc cũng null)
-                } else {
-                    price = salePrice; // Dùng giá sale
-                }
-                double subtotal = price * qty;
+                double subtotal = qty * price;
 
                 OrderDetail od = OrderDetail.builder()
                         .order(order)
@@ -179,26 +198,35 @@ public class OrderService implements IOrderService {
                         .subtotal(subtotal)
                         .build();
 
-                details.add(od);
-                total += subtotal;
+                orderDetails.add(od);
+                totalAmount += subtotal;
 
-                // Update stock
+                // Trừ tồn kho (chỉ trừ sau khi check xong hết)
                 pv.setStock(pv.getStock() - qty);
-                productVariantRepository.save(pv);
             }
 
-            order.setOrderDetails(details);
-            order.setTotalAmount(total);
+            order.setOrderDetails(orderDetails);
+            order.setTotalAmount(totalAmount);
 
-            Order saved = orderRepository.save(order);
+            // Lưu order
+            Order savedOrder = orderRepository.save(order);
 
-            // Clear cart
-            cartDetailRepository.deleteByCart(cart);
-            cart.setTotal(0.0);
+            // Lưu thay đổi stock
+            productVariantRepository.saveAll(
+                    cartDetails.stream()
+                            .map(CartDetail::getProductVariant)
+                            .toList()
+            );
+
+            // ================================
+            // 7. Clear cart
+            // ================================
+            cart.getDetails().clear();     // Xoá trong RAM (Hibernate)
+            cartDetailRepository.deleteByCart(cart);  // Xoá trong DB
             cartRepository.save(cart);
 
             return BaseResponse.<OrderDto>builder()
-                    .result(Optional.of(orderMapper.mapToDto(saved)))
+                    .result(Optional.of(orderMapper.mapToDto(savedOrder)))
                     .build();
 
         } catch (Exception e) {
@@ -209,7 +237,15 @@ public class OrderService implements IOrderService {
                     .build();
         }
     }
+    private double calculateEffectivePrice(ProductVariant pv) {
+        Double salePrice = pv.getPriceSale();
+        Double regularPrice = pv.getPrice();
 
+        if (regularPrice == null) return 0.0;
+        if (salePrice == null || salePrice >= regularPrice) return regularPrice;
+
+        return salePrice;
+    }
     // =============== GET ALL ORDERS ===============
     @Override
     public PaginationResponse<OrderDto> getAllOrders(OrderFilterRequest filter) {

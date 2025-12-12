@@ -34,12 +34,6 @@ public class CartDetail {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false)
-    private Double price; // unit price snapshot
-
-    @Column(nullable = false)
-    private Double subtotal; // price * quantity snapshot
-
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

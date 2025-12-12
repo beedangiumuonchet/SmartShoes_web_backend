@@ -16,7 +16,6 @@ public class CartMapper {
         return CartDto.builder()
                 .id(cart.getId())
                 .userId(cart.getUser() != null ? cart.getUser().getId() : null)
-                .total(cart.getTotal())
                 .createdAt(cart.getCreatedAt())
                 .updatedAt(cart.getUpdatedAt())
                 .details(cart.getDetails() == null ? null :
@@ -30,9 +29,8 @@ public class CartMapper {
                 .id(detail.getId())
                 .productVariantId(detail.getProductVariant() != null ? detail.getProductVariant().getId() : null)
                 .quantity(detail.getQuantity())
-                .price(detail.getPrice())
+                .price(detail.getProductVariant().getPrice())
                 .priceSale(detail.getProductVariant().getPriceSale())
-                .subtotal(detail.getSubtotal())
                 .createdAt(detail.getCreatedAt())
                 .updatedAt(detail.getUpdatedAt())
                 .build();

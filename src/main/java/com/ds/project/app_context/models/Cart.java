@@ -29,10 +29,6 @@ public class Cart {
     @JsonIgnore
     private User user;
 
-    @Column(name = "total", nullable = false)
-    @Builder.Default
-    private Double total = 0.0;
-
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartDetail> details = new ArrayList<>();
 

@@ -27,3 +27,7 @@ python -m app.ingest
 uvicorn app.main:app --reload
 ```
 
+7. Chạy lúc thêm xóa sửa product
+```bash
+uvicorn app.embed_service:app --reload --port 8001
+```
