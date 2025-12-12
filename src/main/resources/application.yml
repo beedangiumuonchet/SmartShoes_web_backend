@@ -23,7 +23,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/shoesstore_db
     username: postgres
-    password: 123456
+    password: 2211
     hikari:
       maximum-pool-size: 10
   jpa:
@@ -38,7 +38,15 @@ spring:
   servlet:
     multipart:
       max-file-size: 50MB
-      max-request-size: 50MB
+      max-request-size: 200MB
+      enabled: true
+  server:
+    tomcat:
+      max-swallow-size: -1
+      max-http-form-post-size: -1
+      # Không giới hạn số “file parts”
+      multipart:
+        max-file-count: -1
 
 # Development Logging - Only DB, errors, and app logs
 logging:
