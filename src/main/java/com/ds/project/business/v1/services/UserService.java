@@ -11,6 +11,7 @@ import com.ds.project.common.entities.base.Page;
 import com.ds.project.common.entities.base.PagedData;
 import com.ds.project.common.entities.dto.UserDto;
 import com.ds.project.common.entities.dto.request.UserRequest;
+import com.ds.project.common.entities.dto.request.ChangePasswordRequest;
 import com.ds.project.common.interfaces.IUserService;
 import com.ds.project.common.mapper.UserMapper;
 import com.ds.project.common.utils.PasswordUtils;
@@ -515,5 +516,57 @@ public class UserService implements IUserService {
                 .build());
         }
     }
-    
+
+    @Override
+    @Transactional
+    public BaseResponse<Void> changePassword(String userId, ChangePasswordRequest request) {
+        try {
+            // 1️⃣ Lấy user
+            User user = userRepository.findById(userId)
+                    .filter(u -> !u.getDeleted())
+                    .orElse(null);
+
+            if (user == null) {
+                return BaseResponse.<Void>builder()
+                        .message(Optional.of("User not found with id: " + userId))
+                        .build();
+            }
+
+            // 2️⃣ Kiểm tra mật khẩu cũ
+            if (!PasswordUtils.matches(request.getOldPassword(), user.getPassword())) {
+                return BaseResponse.<Void>builder()
+                        .message(Optional.of("Old password is incorrect"))
+                        .build();
+            }
+
+            // 3️⃣ Kiểm tra confirm password
+            if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+                return BaseResponse.<Void>builder()
+                        .message(Optional.of("New password and confirm password do not match"))
+                        .build();
+            }
+
+            // 4️⃣ Không cho đổi sang mật khẩu cũ
+            if (PasswordUtils.matches(request.getNewPassword(), user.getPassword())) {
+                return BaseResponse.<Void>builder()
+                        .message(Optional.of("New password must be different from old password"))
+                        .build();
+            }
+
+            // 5️⃣ Encode & lưu
+            user.setPassword(PasswordUtils.encodePassword(request.getNewPassword()));
+            user.setUpdatedAt(LocalDateTime.now());
+
+            userRepository.save(user);
+
+            return BaseResponse.<Void>builder().build();
+
+        } catch (Exception e) {
+            log.error("Error changing password for user {}: {}", userId, e.getMessage(), e);
+            return BaseResponse.<Void>builder()
+                    .message(Optional.of("Failed to change password: " + e.getMessage()))
+                    .build();
+        }
+    }
+
 }
