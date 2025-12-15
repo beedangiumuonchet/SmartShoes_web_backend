@@ -12,6 +12,7 @@ public interface IBrandService {
     BrandResponse createBrand(BrandRequest request);
     BrandResponse updateBrand(String id, BrandRequest request);
     BrandResponse getBrandById(String id);
+    BrandResponse getBrandBySlug(String slug);
     List<BrandResponse> getAllBrands();
     void deleteBrand(String id);
 }

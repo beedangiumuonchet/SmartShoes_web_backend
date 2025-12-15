@@ -1,6 +1,7 @@
 package com.ds.project.application.controllers.v1;
 
 import com.ds.project.common.entities.dto.request.CategoryRequest;
+import com.ds.project.common.entities.dto.response.BrandResponse;
 import com.ds.project.common.entities.dto.response.CategoryResponse;
 import com.ds.project.common.interfaces.ICategoryService;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,20 @@ public class CategoryController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error fetching category by id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().body("Failed to fetch category: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get category by SLUG
+     */
+    @GetMapping("slug/{slug}")
+    public ResponseEntity<?> getCategoryBySlug(@PathVariable String slug) {
+        try {
+            CategoryResponse response = categoryService.getCategoryBySlug(slug);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching category by slug {}: {}", slug, e.getMessage(), e);
             return ResponseEntity.badRequest().body("Failed to fetch category: " + e.getMessage());
         }
     }

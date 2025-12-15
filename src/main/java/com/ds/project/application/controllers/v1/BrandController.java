@@ -36,6 +36,11 @@ public class BrandController {
         return ResponseEntity.ok(brandService.getBrandById(id));
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<BrandResponse> getBrandBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(brandService.getBrandBySlug(slug));
+    }
+
     @GetMapping
     public ResponseEntity<List<BrandResponse>> getAllBrands() {
         return ResponseEntity.ok(brandService.getAllBrands());

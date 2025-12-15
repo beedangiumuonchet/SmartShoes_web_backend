@@ -16,12 +16,21 @@ public class CategoryMapper {
         return Category.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .url(request.getUrl())
                 .build();
     }
 
     public void updateEntity(Category category, CategoryRequest request) {
-        if (request.getName() != null) category.setName(request.getName());
-        category.setDescription(request.getDescription());
+        if (category == null || request == null) return;
+
+        if (request.getName() != null)
+            category.setName(request.getName());
+
+        if (request.getDescription() != null)
+            category.setDescription(request.getDescription());
+
+        if (request.getUrl() != null)
+            category.setUrl(request.getUrl());
     }
 
     public CategoryResponse toResponse(Category category) {
@@ -30,6 +39,8 @@ public class CategoryMapper {
                 .id(category.getId())
                 .name(category.getName())
                 .description(category.getDescription())
+                .slug(category.getSlug())
+                .url(category.getUrl())
                 .build();
     }
 }

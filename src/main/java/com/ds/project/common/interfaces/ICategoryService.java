@@ -12,6 +12,7 @@ public interface ICategoryService {
     CategoryResponse createCategory(CategoryRequest request);
     CategoryResponse updateCategory(String id, CategoryRequest request);
     CategoryResponse getCategoryById(String id);
+    CategoryResponse getCategoryBySlug(String slut);
     List<CategoryResponse> getAllCategories();
     void deleteCategory(String id);
 }

@@ -9,8 +9,11 @@ import com.ds.project.common.mapper.BrandMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
@@ -24,23 +27,50 @@ public class BrandService implements IBrandService {
 
     @Override
     @Transactional
+
     public BrandResponse createBrand(BrandRequest request) {
         if (brandRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
             throw new IllegalArgumentException("Brand name already exists");
         }
 
         Brand brand = mapper.toEntity(request);
+
+        // 👉 sinh slug từ name
+        String slug = toSlug(request.getName());
+
+        // 👉 đảm bảo slug unique
+        if (brandRepository.existsBySlug(slug)) {
+            slug = slug + "-" + System.currentTimeMillis();
+        }
+
+        brand.setSlug(slug);
+
         Brand saved = brandRepository.save(brand);
         return mapper.toResponse(saved);
     }
 
-    @Override
-    @Transactional
     public BrandResponse updateBrand(String id, BrandRequest request) {
+
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Brand not found with id=" + id));
 
+        boolean isNameChanged =
+                request.getName() != null &&
+                        !request.getName().equalsIgnoreCase(brand.getName());
+
         mapper.updateEntity(brand, request);
+
+        // 👉 nếu đổi name → sinh lại slug
+        if (isNameChanged) {
+            String newSlug = toSlug(request.getName());
+
+            if (brandRepository.existsBySlugAndIdNot(newSlug, id)) {
+                newSlug = newSlug + "-" + System.currentTimeMillis();
+            }
+            log.info("📦 Fetched newSlug brand {} ", newSlug);
+            brand.setSlug(newSlug);
+        }
+
         Brand updated = brandRepository.save(brand);
         return mapper.toResponse(updated);
     }
@@ -50,6 +80,16 @@ public class BrandService implements IBrandService {
     public BrandResponse getBrandById(String id) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Brand not found with id=" + id));
+        return mapper.toResponse(brand);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public BrandResponse getBrandBySlug(String slug) {
+        Brand brand = brandRepository.findBySlug(slug)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Brand not found with slug=" + slug)
+                );
+
         return mapper.toResponse(brand);
     }
 
@@ -66,5 +106,12 @@ public class BrandService implements IBrandService {
             throw new EntityNotFoundException("Brand not found id=" + id);
         }
         brandRepository.deleteById(id);
+    }
+
+    public String toSlug(String input) {
+        return input.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .trim()
+                .replaceAll("\\s+", "-");
     }
 }

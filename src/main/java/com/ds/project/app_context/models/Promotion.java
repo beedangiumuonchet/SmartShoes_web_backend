@@ -18,11 +18,12 @@ public class Promotion {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
+    @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     private Double percent;

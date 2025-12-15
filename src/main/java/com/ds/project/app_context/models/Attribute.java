@@ -16,7 +16,7 @@ public class Attribute {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
+    @Column(length = 36, updatable = false, nullable = false)
     private String id;
 
     @Column(name = "key_name")
@@ -24,5 +24,6 @@ public class Attribute {
 
     private String value;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 }
