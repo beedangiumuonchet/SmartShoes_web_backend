@@ -3,6 +3,7 @@ package com.ds.project.business.v1.services;
 import com.ds.project.app_context.models.Category;
 import com.ds.project.app_context.repositories.CategoryRepository;
 import com.ds.project.common.entities.dto.request.CategoryRequest;
+import com.ds.project.common.entities.dto.response.BrandResponse;
 import com.ds.project.common.entities.dto.response.CategoryResponse;
 import com.ds.project.common.interfaces.ICategoryService;
 import com.ds.project.common.mapper.CategoryMapper;
@@ -12,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -30,6 +33,17 @@ public class CategoryService implements ICategoryService {
         }
 
         Category category = mapper.toEntity(request);
+
+        // 👉 sinh slug từ name
+        String slug = toSlug(request.getName());
+
+        // 👉 đảm bảo slug unique
+        if (categoryRepository.existsBySlug(slug)) {
+            slug = slug + "-" + System.currentTimeMillis();
+        }
+
+        category.setSlug(slug);
+
         Category saved = categoryRepository.save(category);
         return mapper.toResponse(saved);
     }
@@ -40,7 +54,24 @@ public class CategoryService implements ICategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found with id=" + id));
 
+        boolean isNameChanged =
+                request.getName() != null &&
+                        !request.getName().equalsIgnoreCase(category.getName());
+
         mapper.updateEntity(category, request);
+
+        // 👉 nếu đổi name → sinh lại slug
+        if (isNameChanged) {
+            String newSlug = toSlug(request.getName());
+
+            if (categoryRepository.existsBySlugAndIdNot(newSlug, id)) {
+                newSlug = newSlug + "-" + System.currentTimeMillis();
+            }
+
+            log.info("📦 Updated category slug = {}", newSlug);
+            category.setSlug(newSlug);
+        }
+
         Category updated = categoryRepository.save(category);
         return mapper.toResponse(updated);
     }
@@ -53,6 +84,16 @@ public class CategoryService implements ICategoryService {
         return mapper.toResponse(category);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CategoryResponse getCategoryBySlug(String slug) {
+        Category category = categoryRepository.findBySlug(slug)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Category not found with slug=" + slug)
+                );
+
+        return mapper.toResponse(category);
+    }
     @Override
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
@@ -68,5 +109,25 @@ public class CategoryService implements ICategoryService {
             throw new EntityNotFoundException("Category not found id=" + id);
         }
         categoryRepository.deleteById(id);
+    }
+
+    public static String toSlug(String input) {
+        if (input == null) return null;
+
+        // 1. Chuẩn hóa Unicode (tách dấu)
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+
+        // 2. Xóa dấu tiếng Việt
+        String slug = normalized
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replace("đ", "d")
+                .replace("Đ", "D");
+
+        // 3. Chuẩn hóa slug
+        return slug
+                .toLowerCase(Locale.ENGLISH)
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .trim()
+                .replaceAll("\\s+", "-");
     }
 }

@@ -19,12 +19,13 @@ public class Product {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(columnDefinition = "varchar", updatable = false, nullable = false)
+    @Column(length = 36, updatable = false, nullable = false)
     private String id;
 
     @Column(unique = true, nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)

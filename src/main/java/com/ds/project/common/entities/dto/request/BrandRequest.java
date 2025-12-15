@@ -15,5 +15,7 @@ public class BrandRequest {
     @NotBlank(message = "Brand name is required")
     private String name;
 
+    private String url;
+
     private String description;
 }

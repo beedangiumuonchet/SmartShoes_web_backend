@@ -16,12 +16,21 @@ public class BrandMapper {
         return Brand.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .url(request.getUrl())
                 .build();
     }
 
     public void updateEntity(Brand brand, BrandRequest request) {
-        if (request.getName() != null) brand.setName(request.getName());
-        brand.setDescription(request.getDescription());
+        if (brand == null || request == null) return;
+
+        if (request.getName() != null)
+            brand.setName(request.getName());
+
+        if (request.getDescription() != null)
+            brand.setDescription(request.getDescription());
+
+        if (request.getUrl() != null)
+            brand.setUrl(request.getUrl());
     }
 
     public BrandResponse toResponse(Brand brand) {
@@ -30,6 +39,8 @@ public class BrandMapper {
                 .id(brand.getId())
                 .name(brand.getName())
                 .description(brand.getDescription())
+                .slug(brand.getSlug())
+                .url(brand.getUrl())
                 .build();
     }
 }

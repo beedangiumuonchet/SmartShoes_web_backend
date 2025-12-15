@@ -21,7 +21,7 @@ public class Role {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(columnDefinition = "varchar", nullable = false, updatable = false)
+    @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
     @Column(unique = true, nullable = false)

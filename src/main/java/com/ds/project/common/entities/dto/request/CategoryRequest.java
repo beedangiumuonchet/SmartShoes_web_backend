@@ -14,6 +14,6 @@ public class CategoryRequest {
 
     @NotBlank(message = "Category name is required")
     private String name;
-
+    private String url;
     private String description;
 }
