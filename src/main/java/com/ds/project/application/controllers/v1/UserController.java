@@ -4,6 +4,7 @@ import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.base.PagedData;
 import com.ds.project.common.entities.base.Page;
 import com.ds.project.common.entities.dto.UserDto;
+import com.ds.project.common.entities.dto.request.ChangePasswordRequest;
 import com.ds.project.common.entities.dto.request.UserRequest;
 import com.ds.project.common.utils.ResponseUtils;
 import com.ds.project.application.annotations.AuthRequired;
@@ -118,6 +119,23 @@ public class UserController {
                     ? response.getMessage().get()
                     : "Failed to remove role";
             return ResponseUtils.error(message, HttpStatus.BAD_REQUEST);
+        }
+    }
+    @PutMapping("/{id}/change-password")
+    @AuthRequired
+    public ResponseEntity<Map<String, Object>> changePassword(
+            @PathVariable String id,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        BaseResponse<Void> response = userService.changePassword(id, request);
+
+        if (response.getMessage() == null || response.getMessage().isEmpty()) {
+            return ResponseUtils.success(null);
+        } else {
+            return ResponseUtils.error(
+                    response.getMessage().orElse("Failed to change password"),
+                    HttpStatus.BAD_REQUEST
+            );
         }
     }
 
