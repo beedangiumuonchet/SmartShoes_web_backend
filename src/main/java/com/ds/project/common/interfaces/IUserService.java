@@ -4,6 +4,7 @@ import com.ds.project.common.entities.base.BaseResponse;
 import com.ds.project.common.entities.base.Page;
 import com.ds.project.common.entities.base.PagedData;
 import com.ds.project.common.entities.dto.UserDto;
+import com.ds.project.common.entities.dto.request.ChangePasswordRequest;
 import com.ds.project.common.entities.dto.request.UserRequest;
 
 import java.util.Optional;
@@ -72,4 +73,7 @@ public interface IUserService {
      * Authenticate user by email or username
      */
     Optional<BaseResponse<UserDto>> authenticateByEmailOrUsername(String emailOrUsername, String password);
+
+    BaseResponse<Void> changePassword(String userId, ChangePasswordRequest request);
+
 }
