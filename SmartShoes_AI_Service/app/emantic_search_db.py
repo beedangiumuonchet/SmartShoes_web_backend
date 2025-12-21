@@ -43,22 +43,95 @@ def apply_spell_fix(q: str) -> str:
 # KEYWORD BOOST (ưu tiên brand → category → chất liệu)
 # ============================================================
 KEYWORD_BOOST = {
-    # BRAND
-    "nike": 2.5, "adidas": 2.4, "vans": 2.2, "mizuno": 2.2,
-    "puma": 2.1, "new balance": 2.2, "nb": 2.2,
+    # --------------------
+    # CATEGORY (quan trọng nhất)
+    # --------------------
+    "giày chạy bộ": 2.4,
+    "chạy bộ": 2.4,
+    "giày sneaker": 2.2,
+    "sneaker": 2.2,
+    "giày đá bóng": 2.4,
+    "đá bóng": 2.4,
+    "giày leo núi": 2.3,
+    "leo núi": 2.3,
+    "giày cầu lông": 2.3,
+    "cầu lông": 2.3,
+    "giày tập gym": 2.2,
+    "tập gym": 2.2,
+    "giày tennis": 2.4,
+    "tennis": 2.4,
+    "giày training": 2.2,
+    "training": 2.2,
 
-    # CATEGORY
-    "giày chạy bộ": 2.4, "chạy bộ": 2.4,
-    "giày đá bóng": 2.4, "đá bóng": 2.4,
-    "sneaker": 2.2, "giày sneaker": 2.2,
-    "gym": 2.0, "giày tập gym": 2.0,
+    # --------------------
+    # BRAND (cực kỳ quan trọng)
+    # --------------------
+    "adidas": 2.6,
+    "asics": 2.5,
+    "converse": 2.4,
+    "mizuno": 2.4,
+    "nike": 2.8,
+    "puma": 2.4,
+    "reebok": 2.3,
+    "vans": 2.3,
+    "new balance": 2.5,
+    "nb": 2.5,  # nhiều người gõ tắt
+    "under armour": 2.4,
+    "ua": 2.4,  # nhiều người gõ tắt
 
-    # MATERIAL
-    "da": 2.0, "da bò": 2.2, "da lộn": 2.0, "mesh": 1.8,
-    "lưới": 1.5, "knit": 1.5, "canvas": 1.4,
+    # --------------------
+    # CHẤT LIỆU (rất quan trọng - mới thêm)
+    # --------------------
+    "da tự nhiên": 2.3,
+    "da thật": 2.3,
+    "da bò": 2.2,
+    "da lộn": 2.1,
+    "da tổng hợp": 2.0,
+    "da công nghiệp": 2.0,
+    "mesh": 2.2,
+    "lưới thoáng khí": 2.2,
+    "lưới": 2.1,
+    "knit": 2.1,
+    "vải dệt": 2.0,
+    "vải dệt kỹ thuật": 2.1,
+    "vải dệt kĩ thuật cao": 2.1,
+    "canvas": 2.0,
+    "vải canvas": 2.0,
+    "vải tổng hợp": 1.9,
+    "cao su": 1.8,
+    "đế cao su": 1.8,
+    
+    # --------------------
+    # ATTRIBUTE (ưu tiên trung bình)
+    # --------------------
+    "chống trượt": 1.8,
+    "độ bám tốt": 1.7,
+    "ôm chân": 1.6,
+    "giảm chấn": 1.7,
+    "thoáng khí": 1.6,
+    "nhẹ": 1.4,
+    "nhẹ nhàng": 1.4,
+    "bền bỉ": 1.5,
+    "thoải mái": 1.5,
+    "hỗ trợ cổ chân": 1.6,
+    "sân cỏ tự nhiên": 2,
+    "sân cỏ nhân tạo": 2,
 
-    # ATTRIBUTE
-    "thoáng khí": 1.4, "nhẹ": 1.3, "chống trượt": 1.5,
+    # --------------------
+    # COLORS (ưu tiên thấp)
+    # --------------------
+    "đỏ": 1.1,
+    "xanh dương": 1.1,
+    "xanh lá": 1.1,
+    "vàng": 1.1,
+    "đen": 1.1,
+    "trắng": 1.1,
+    "nâu": 1.1,
+    "xám": 1.1,
+    "cam": 1.1,
+    "be": 1.1,
+    "tím": 1.1,
+    "hồng": 1.1,
 }
 
 def apply_keyword_boost(q: str) -> str:
@@ -126,9 +199,9 @@ def preprocess_query(q: str) -> str:
 
     if vocab_global is None:
         vocab_global = build_vocab_from_db()
-
-    q = clean_text(q)
+        
     q = apply_spell_fix(q)
+    q = clean_text(q)
     q = apply_fuzzy_fix(q, vocab_global)
     q = apply_keyword_boost(q)
 
@@ -165,12 +238,13 @@ def semantic_search_db(
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, description,
-               1 - (embedding <=> %s::vector) AS score
-        FROM product_embeddings
-        ORDER BY embedding <=> %s::vector
-        LIMIT %s;
-    """, (q_vec.tolist(), q_vec.tolist(), max_candidates))
+    SELECT id, description,
+           1 - (embedding <=> %s::vector) AS score
+    FROM product_embeddings
+    ORDER BY (1 - (embedding <=> %s::vector)) DESC
+    LIMIT %s;
+""", (q_vec.tolist(), q_vec.tolist(), max_candidates))
+
 
     rows = cur.fetchall()
     conn.close()
