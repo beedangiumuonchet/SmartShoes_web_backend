@@ -184,7 +184,6 @@ public class RoleService implements IRoleService {
     public void deleteRole(String id) {
         try {
             log.info("Soft deleting role: {}", id);
-            
             Role role = roleRepository.findById(id)
                 .filter(r -> !r.getDeleted())
                 .orElse(null);

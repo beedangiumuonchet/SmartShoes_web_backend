@@ -16,7 +16,7 @@ public interface OrderRepository extends JpaRepository<Order, String>, JpaSpecif
             "COUNT(o) AS totalOrders, " +
             "SUM(o.totalAmount) AS totalSpent " +
             "FROM Order o " +
-            "WHERE o.createdAt BETWEEN :start AND :end " +
+            "WHERE o.updatedAt BETWEEN :start AND :end " +
             "AND o.status = com.ds.project.common.enums.OrderStatus.DELIVERED " +
             "GROUP BY o.user " +
             "ORDER BY totalSpent DESC")
