@@ -358,7 +358,7 @@ public class OrderService implements IOrderService {
     }
 
     // =============== UPDATE STATUS ===============
-    @Override
+    @Transactional
     public BaseResponse<OrderDto> updateStatus(String orderId, UpdateStatusRequest request) {
         try {
             Order order = orderRepository.findById(orderId)
@@ -368,10 +368,11 @@ public class OrderService implements IOrderService {
             OrderStatus next = request.getStatus();
 
             boolean allowed = switch (current) {
-                case PENDING -> next == OrderStatus.PAID || next == OrderStatus.CONFIRMED ;
+                case PENDING -> next == OrderStatus.PAID || next == OrderStatus.CONFIRMED;
                 case PAID -> next == OrderStatus.CONFIRMED;
                 case CONFIRMED -> next == OrderStatus.SHIPPING;
-                case SHIPPING -> next == OrderStatus.DELIVERED;
+                case SHIPPING -> next == OrderStatus.DELIVERED || next == OrderStatus.RETURNED;
+                case DELIVERED -> next == OrderStatus.RETURNED;
                 default -> false;
             };
 
@@ -380,6 +381,17 @@ public class OrderService implements IOrderService {
                         .message(Optional.of("Transition not allowed"))
                         .result(Optional.empty())
                         .build();
+            }
+
+            // 🔥 HOÀN KHO KHI RETURNED (GIỐNG CANCEL)
+            if (next == OrderStatus.RETURNED && current != OrderStatus.RETURNED) {
+                if (order.getOrderDetails() != null) {
+                    for (OrderDetail od : order.getOrderDetails()) {
+                        ProductVariant pv = od.getProductVariant();
+                        pv.setStock(pv.getStock() + od.getQuantity());
+                        productVariantRepository.save(pv);
+                    }
+                }
             }
 
             order.setStatus(next);
@@ -399,6 +411,7 @@ public class OrderService implements IOrderService {
                     .build();
         }
     }
+
 
     public BaseResponse<OrderDto> updateShipping(String orderId, UpdateShippingRequest request) {
         try {
