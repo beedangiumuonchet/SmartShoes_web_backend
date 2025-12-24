@@ -18,6 +18,7 @@ public interface BrandRepository extends JpaRepository<Brand, String>, JpaSpecif
     Optional<Brand> findBySlug(String slug);
 
     Optional<Brand> findByNameIgnoreCase(String name);
+    boolean existsByNameIgnoreCaseAndIdNot(String name, String id);
 
     boolean existsBySlugAndIdNot(String slug, String id);
 

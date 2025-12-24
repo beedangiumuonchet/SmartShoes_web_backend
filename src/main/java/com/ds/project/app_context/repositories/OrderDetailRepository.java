@@ -15,7 +15,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, String
     @Query("SELECT od.productVariant.product AS product, SUM(od.quantity) AS totalQuantity, " +
             "SUM(od.quantity * od.price) AS totalRevenue " +
             "FROM OrderDetail od " +
-            "WHERE od.order.createdAt BETWEEN :start AND :end " +
+            "WHERE od.order.updatedAt BETWEEN :start AND :end " +
             "AND od.order.status = com.ds.project.common.enums.OrderStatus.DELIVERED " +
             "GROUP BY od.productVariant.product " +
             "ORDER BY totalQuantity DESC")

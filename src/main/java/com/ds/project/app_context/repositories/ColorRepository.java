@@ -13,6 +13,9 @@ public interface ColorRepository extends JpaRepository<Color, String>, JpaSpecif
     Optional<Color> findByName(String name);
 
     boolean existsByName(String name);
+    boolean existsByNameIgnoreCase(String name);
     Optional<Color> findByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, String id);
 
 }

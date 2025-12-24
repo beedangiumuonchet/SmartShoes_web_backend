@@ -9,6 +9,7 @@ import com.ds.project.app_context.repositories.ProductVariantRepository;
 import com.ds.project.common.entities.dto.request.PromotionProductRequest;
 import com.ds.project.common.entities.dto.response.PromotionProductResponse;
 import com.ds.project.common.interfaces.IPromotionProductService;
+import com.ds.project.common.interfaces.IPromotionService;
 import com.ds.project.common.mapper.PromotionProductMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class PromotionProductService implements IPromotionProductService {
     private final PromotionRepository promotionRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PromotionProductMapper mapper;
+    private final PromotionService promotionService;
 
     @Override
     public PromotionProductResponse create(PromotionProductRequest request) {
@@ -42,7 +44,9 @@ public class PromotionProductService implements IPromotionProductService {
         PromotionProduct saved = promotionProductRepository.save(entity);
 
         // Cập nhật priceSale ngay khi tạo
-        updatePriceSaleForVariant(variant);
+//        updatePriceSaleForVariant(variant);
+
+        promotionService.recalculatePriceSaleForVariant(variant);
 
         return mapper.mapToDto(saved);
     }
@@ -81,93 +85,106 @@ public class PromotionProductService implements IPromotionProductService {
 
     @Override
     public void delete(String id) {
-        if (!promotionProductRepository.existsById(id)) {
-            throw new EntityNotFoundException("Không tìm thấy PromotionProduct id=" + id);
-        }
-        promotionProductRepository.deleteById(id);
+        PromotionProduct pp = promotionProductRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy PromotionProduct id=" + id));
+
+        ProductVariant variant = pp.getProductVariant();
+
+        promotionProductRepository.delete(pp);
+
+        // ⭐ BẮT BUỘC: tính lại giá sau khi xoá liên kết
+        promotionService.recalculatePriceSaleForVariant(variant);
     }
+
 
     /**
      * Cập nhật priceSale cho 1 ProductVariant dựa trên Promotion active
      */
-    private void updatePriceSaleForVariant(ProductVariant variant) {
-        if (variant == null) return;
-
-        LocalDate today = LocalDate.now();
-
-        // Lấy tất cả PromotionProduct của variant này
-        List<PromotionProduct> activePPs = promotionProductRepository.findByProductVariantId(variant.getId());
-
-        // Chỉ lấy promotions đang active và trong ngày
-        double maxDiscount = 0;
-        for (PromotionProduct pp : activePPs) {
-            Promotion promo = pp.getPromotion();
-            if (promo != null
-                    && promo.getStatus() == Promotion.PromotionStatus.ACTIVE
-                    && !today.isBefore(promo.getStartDate())
-                    && !today.isAfter(promo.getEndDate())) {
-                double discount = variant.getPrice() * promo.getPercent() / 100;
-                if (discount > maxDiscount) maxDiscount = discount;
-            }
-        }
-
-        if (maxDiscount > 0) {
-            variant.setPriceSale(variant.getPrice() - maxDiscount);
-        } else {
-            variant.setPriceSale(variant.getPrice()); // reset về giá gốc
-        }
-
-        productVariantRepository.save(variant);
-    }
+//    private void updatePriceSaleForVariant(ProductVariant variant) {
+//        if (variant == null) return;
+//
+//        LocalDate today = LocalDate.now();
+//
+//        // Lấy tất cả PromotionProduct của variant này
+//        List<PromotionProduct> activePPs = promotionProductRepository.findByProductVariantId(variant.getId());
+//
+//        // Chỉ lấy promotions đang active và trong ngày
+//        double maxDiscount = 0;
+//        for (PromotionProduct pp : activePPs) {
+//            Promotion promo = pp.getPromotion();
+//            if (promo != null
+//                    && promo.getStatus() == Promotion.PromotionStatus.ACTIVE
+//                    && !today.isBefore(promo.getStartDate())
+//                    && !today.isAfter(promo.getEndDate())) {
+//                double discount = variant.getPrice() * promo.getPercent() / 100;
+//                if (discount > maxDiscount) maxDiscount = discount;
+//            }
+//        }
+//
+//        if (maxDiscount > 0) {
+//            variant.setPriceSale(variant.getPrice() - maxDiscount);
+//        } else {
+//            variant.setPriceSale(variant.getPrice()); // reset về giá gốc
+//        }
+//
+//        productVariantRepository.save(variant);
+//    }
 
     /**
      * Cập nhật priceSale tự động mỗi ngày lúc 0h
      */
     @Scheduled(cron = "0 4 15 * * ?", zone = "Asia/Ho_Chi_Minh")
     @Transactional
-    public void updatePriceSaleDaily() {
-        LocalDate today = LocalDate.now();
-        System.out.println(">>> [SCHEDULED JOB] updatePriceSaleDaily started at " + LocalDateTime.now());
-        System.out.println(">>> [SCHEDULED JOB] Today = " + today);
-
-        List<PromotionProduct> activePPs = promotionProductRepository.findAll();
-
-        int updated = 0;
-        int reset = 0;
-
-        for (PromotionProduct pp : activePPs) {
-            if (pp.getPromotion() != null && pp.getProductVariant() != null) {
-                var promo = pp.getPromotion();
-                var product = pp.getProductVariant();
-
-                if (promo.getStatus() == Promotion.PromotionStatus.ACTIVE
-                        && !today.isBefore(promo.getStartDate())
-                        && !today.isAfter(promo.getEndDate())) {
-
-                    double discount = product.getPrice() * promo.getPercent() / 100;
-                    product.setPriceSale(product.getPrice() - discount);
-                    productVariantRepository.save(product);
-                    updated++;
-                }
-            }
+    public void recalculateAllPricesDaily() {
+        List<ProductVariant> variants = productVariantRepository.findAll();
+        for (ProductVariant v : variants) {
+            promotionService.recalculatePriceSaleForVariant(v);
         }
-
-        for (PromotionProduct pp : activePPs) {
-            if (pp.getPromotion() != null && pp.getProductVariant() != null) {
-                var promo = pp.getPromotion();
-                var product = pp.getProductVariant();
-
-                if (promo.getStatus() == Promotion.PromotionStatus.EXPIRED
-                        || today.isAfter(promo.getEndDate())) {
-                    product.setPriceSale(product.getPrice());
-                    productVariantRepository.save(product);
-                    reset++;
-                }
-            }
-        }
-
-        System.out.println(">>> [SCHEDULED JOB] updatePriceSaleDaily finished.");
-        System.out.println(">>> [SCHEDULED JOB] Updated: " + updated + ", Reset: " + reset);
     }
+
+//    public void updatePriceSaleDaily() {
+//        LocalDate today = LocalDate.now();
+//        System.out.println(">>> [SCHEDULED JOB] updatePriceSaleDaily started at " + LocalDateTime.now());
+//        System.out.println(">>> [SCHEDULED JOB] Today = " + today);
+//
+//        List<PromotionProduct> activePPs = promotionProductRepository.findAll();
+//
+//        int updated = 0;
+//        int reset = 0;
+//
+//        for (PromotionProduct pp : activePPs) {
+//            if (pp.getPromotion() != null && pp.getProductVariant() != null) {
+//                var promo = pp.getPromotion();
+//                var product = pp.getProductVariant();
+//
+//                if (promo.getStatus() == Promotion.PromotionStatus.ACTIVE
+//                        && !today.isBefore(promo.getStartDate())
+//                        && !today.isAfter(promo.getEndDate())) {
+//
+//                    double discount = product.getPrice() * promo.getPercent() / 100;
+//                    product.setPriceSale(product.getPrice() - discount);
+//                    productVariantRepository.save(product);
+//                    updated++;
+//                }
+//            }
+//        }
+//
+//        for (PromotionProduct pp : activePPs) {
+//            if (pp.getPromotion() != null && pp.getProductVariant() != null) {
+//                var promo = pp.getPromotion();
+//                var product = pp.getProductVariant();
+//
+//                if (promo.getStatus() == Promotion.PromotionStatus.EXPIRED
+//                        || today.isAfter(promo.getEndDate())) {
+//                    product.setPriceSale(product.getPrice());
+//                    productVariantRepository.save(product);
+//                    reset++;
+//                }
+//            }
+//        }
+//
+//        System.out.println(">>> [SCHEDULED JOB] updatePriceSaleDaily finished.");
+//        System.out.println(">>> [SCHEDULED JOB] Updated: " + updated + ", Reset: " + reset);
+//    }
 
 }
