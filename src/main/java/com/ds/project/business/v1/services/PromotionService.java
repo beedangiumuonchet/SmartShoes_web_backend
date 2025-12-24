@@ -96,7 +96,7 @@ public class PromotionService implements IPromotionService {
     /**
      * Chạy mỗi ngày lúc 0h
      */
-    @Scheduled(cron = "0 0 0 * * ?") // 0 giây, 0 phút, 0 giờ, mỗi ngày
+    @Scheduled(cron = "0 2 15 * * ?") // 0 giây, 0 phút, 0 giờ, mỗi ngày
     @Transactional
     public void updatePromotionStatuses() {
         log.info("PromotionStatusJob started at {}", LocalDate.now());

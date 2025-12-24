@@ -11,6 +11,7 @@ import com.ds.project.common.entities.dto.PaymentDto;
 import com.ds.project.common.entities.dto.request.*;
 import com.ds.project.common.entities.dto.response.HandleMomoIpnRequest;
 import com.ds.project.common.entities.dto.response.MomoPaymentResponse;
+import com.ds.project.common.enums.OrderStatus;
 import com.ds.project.common.enums.PaymentMethod;
 import com.ds.project.common.enums.PaymentStatus;
 import com.ds.project.common.interfaces.IPaymentService;
@@ -78,11 +79,12 @@ public class PaymentService implements IPaymentService {
     @Override
     @Transactional
     public BaseResponse<MomoPaymentResponse> createMomoPayment(String orderId, BigDecimal amount) {
+        String transactionId = UUID.randomUUID().toString();
         String partnerCode = momoConfig.getPartnerCode();
         String accessKey = momoConfig.getAccessKey();
         String secretKey = momoConfig.getSecretKey();
         String ipnUrl = momoConfig.getIpnUrl();
-        String returnUrl = momoConfig.getReturnUrl();
+        String returnUrl = momoConfig.getReturnUrl() + "?transactionId=" + transactionId;
         String requestType = momoConfig.getRequestType();
         String createEndpoint = momoConfig.getCreateEndpoint();
         try {
@@ -99,7 +101,7 @@ public class PaymentService implements IPaymentService {
             Payment payment = Payment.builder()
                     .amount(amount)
                     .paymentMethod(PaymentMethod.MOMO)
-                    .transactionId(UUID.randomUUID().toString())
+                    .transactionId(transactionId)
                     .status(PaymentStatus.PENDING)
                     .order(order)
                     .createdAt(LocalDateTime.now())
@@ -138,6 +140,9 @@ public class PaymentService implements IPaymentService {
                     .build();
 
             log.info("[MoMo] Sending request: {}", momoRequest);
+            log.info("RAW SIGNATURE = {}", rawSignature);
+            log.info("SIGNATURE = {}", signature);
+            log.info("REQUEST BODY = {}", momoRequest);
 
             // 3. Gửi request
             RestTemplate restTemplate = new RestTemplate();
@@ -185,7 +190,7 @@ public class PaymentService implements IPaymentService {
             if ("0".equals(ipnRequest.getResultCode())) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 if (payment.getOrder() != null) {
-                    payment.getOrder().setStatus(com.ds.project.common.enums.OrderStatus.PAID);
+                    payment.getOrder().setStatus(OrderStatus.PENDING);
                     orderRepository.save(payment.getOrder());
                 }
             } else {
