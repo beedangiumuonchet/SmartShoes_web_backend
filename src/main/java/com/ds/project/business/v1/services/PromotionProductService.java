@@ -123,7 +123,7 @@ public class PromotionProductService implements IPromotionProductService {
     /**
      * Cập nhật priceSale tự động mỗi ngày lúc 0h
      */
-    @Scheduled(cron = "0 5 0 * * ?", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 4 15 * * ?", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void updatePriceSaleDaily() {
         LocalDate today = LocalDate.now();

@@ -108,9 +108,9 @@ public class PaymentController {
      * User return after Momo payment (redirect). Dùng query param transactionId
      */
     @GetMapping("/momo/return")
-    public ResponseEntity<Map<String, Object>> paymentReturn(@RequestParam("orderId") String orderId) {
+    public ResponseEntity<Map<String, Object>> paymentReturn(@RequestParam("transactionId") String transactionId) {
         try {
-            Payment payment = paymentRepository.findByTransactionId(orderId)
+            Payment payment = paymentRepository.findByTransactionId(transactionId)
                     .orElseThrow(() -> new RuntimeException("Payment not found"));
 
             String redirectUrl;

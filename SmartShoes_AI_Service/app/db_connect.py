@@ -27,7 +27,7 @@ def get_connection():
     return psycopg2.connect(
         host="localhost",
         port=5432,
-        dbname="shoesstore_db",
+        dbname="data",
         user="postgres",
         password="123456",
     )
@@ -48,11 +48,6 @@ def setup_database():
         CREATE TABLE IF NOT EXISTS product_embeddings (
             id TEXT PRIMARY KEY,
             description TEXT,
-            brand TEXT,
-            category TEXT,
-            material TEXT,
-            color TEXT,
-            attributes TEXT,
             embedding vector(768)
         );
     """)

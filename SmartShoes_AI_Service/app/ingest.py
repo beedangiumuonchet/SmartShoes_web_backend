@@ -13,24 +13,14 @@ def insert_product_embedding(conn, product):
     with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO product_embeddings
-            (id, description, brand, category, material, color, attributes, embedding)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            (id, description, embedding)
+            VALUES (%s,%s,%s)
             ON CONFLICT (id) DO UPDATE SET
                 description = EXCLUDED.description,
-                brand = EXCLUDED.brand,
-                category = EXCLUDED.category,
-                material = EXCLUDED.material,
-                color = EXCLUDED.color,
-                attributes = EXCLUDED.attributes,
                 embedding = EXCLUDED.embedding;
         """, (
             product["id"],
             product["description"],
-            product.get("brand"),
-            product.get("category"),
-            product.get("material"),
-            product.get("colors"),
-            product.get("attributes"),
             embedding_list  # <- list, không phải string
         ))
     conn.commit()
@@ -111,12 +101,6 @@ def main():
         product = {
             "id": pid,
             "description": final_text,
-            "brand": brand,
-            "category": category,
-            "material": None,   # database hiện tại không có material
-            "colors": colors,
-            "sizes": sizes,
-            "attributes": attributes,
             "embedding": embedding,
         }
 
