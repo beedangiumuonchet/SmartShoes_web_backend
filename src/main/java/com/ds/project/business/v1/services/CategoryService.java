@@ -28,16 +28,17 @@ public class CategoryService implements ICategoryService {
     @Override
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
-        if (categoryRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
+
+        String name = request.getName().trim();
+
+        if (categoryRepository.findByNameIgnoreCase(name).isPresent()) {
             throw new IllegalArgumentException("Category name already exists");
         }
 
         Category category = mapper.toEntity(request);
 
-        // 👉 sinh slug từ name
-        String slug = toSlug(request.getName());
+        String slug = toSlug(name);
 
-        // 👉 đảm bảo slug unique
         if (categoryRepository.existsBySlug(slug)) {
             slug = slug + "-" + System.currentTimeMillis();
         }
@@ -48,21 +49,34 @@ public class CategoryService implements ICategoryService {
         return mapper.toResponse(saved);
     }
 
+
     @Override
     @Transactional
     public CategoryResponse updateCategory(String id, CategoryRequest request) {
+
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found with id=" + id));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Category not found with id=" + id)
+                );
+
+        String newName = request.getName().trim();
 
         boolean isNameChanged =
-                request.getName() != null &&
-                        !request.getName().equalsIgnoreCase(category.getName());
+                newName != null &&
+                        !newName.equalsIgnoreCase(category.getName());
+
+        // ❗ CHECK TRÙNG NAME (IGNORE CASE)
+        if (isNameChanged &&
+                categoryRepository.existsByNameIgnoreCaseAndIdNot(newName, id)) {
+
+            throw new IllegalArgumentException("Category name already exists");
+        }
 
         mapper.updateEntity(category, request);
 
         // 👉 nếu đổi name → sinh lại slug
         if (isNameChanged) {
-            String newSlug = toSlug(request.getName());
+            String newSlug = toSlug(newName);
 
             if (categoryRepository.existsBySlugAndIdNot(newSlug, id)) {
                 newSlug = newSlug + "-" + System.currentTimeMillis();
@@ -75,6 +89,7 @@ public class CategoryService implements ICategoryService {
         Category updated = categoryRepository.save(category);
         return mapper.toResponse(updated);
     }
+
 
     @Override
     @Transactional(readOnly = true)

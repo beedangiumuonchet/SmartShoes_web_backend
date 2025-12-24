@@ -27,16 +27,19 @@ public class BrandService implements IBrandService {
 
     @Override
     @Transactional
-
     public BrandResponse createBrand(BrandRequest request) {
-        if (brandRepository.findByNameIgnoreCase(request.getName()).isPresent()) {
+
+        String name = request.getName().trim();
+
+        if (brandRepository.findByNameIgnoreCase(name).isPresent()) {
             throw new IllegalArgumentException("Brand name already exists");
         }
 
         Brand brand = mapper.toEntity(request);
+        brand.setName(name);
 
         // 👉 sinh slug từ name
-        String slug = toSlug(request.getName());
+        String slug = toSlug(name);
 
         // 👉 đảm bảo slug unique
         if (brandRepository.existsBySlug(slug)) {
@@ -49,31 +52,46 @@ public class BrandService implements IBrandService {
         return mapper.toResponse(saved);
     }
 
+    @Override
+    @Transactional
     public BrandResponse updateBrand(String id, BrandRequest request) {
 
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Brand not found with id=" + id));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Brand not found with id=" + id)
+                );
+
+        String newName = request.getName().trim();
 
         boolean isNameChanged =
-                request.getName() != null &&
-                        !request.getName().equalsIgnoreCase(brand.getName());
+                newName != null &&
+                        !newName.equalsIgnoreCase(brand.getName());
 
-        mapper.updateEntity(brand, request);
+        // ❗ CHECK TRÙNG NAME (IGNORE CASE)
+        if (isNameChanged &&
+                brandRepository.existsByNameIgnoreCaseAndIdNot(newName, id)) {
+
+            throw new IllegalArgumentException("Brand name already exists");
+        }
+
+        brand.setName(newName);
 
         // 👉 nếu đổi name → sinh lại slug
         if (isNameChanged) {
-            String newSlug = toSlug(request.getName());
+            String newSlug = toSlug(newName);
 
             if (brandRepository.existsBySlugAndIdNot(newSlug, id)) {
                 newSlug = newSlug + "-" + System.currentTimeMillis();
             }
-            log.info("📦 Fetched newSlug brand {} ", newSlug);
+
+            log.info("📦 Updated brand slug = {}", newSlug);
             brand.setSlug(newSlug);
         }
 
         Brand updated = brandRepository.save(brand);
         return mapper.toResponse(updated);
     }
+
 
     @Override
     @Transactional(readOnly = true)

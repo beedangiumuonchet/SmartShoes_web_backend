@@ -1,6 +1,10 @@
 package com.ds.project.business.v1.services;
 
+import com.ds.project.app_context.models.ProductVariant;
 import com.ds.project.app_context.models.Promotion;
+import com.ds.project.app_context.models.PromotionProduct;
+import com.ds.project.app_context.repositories.ProductVariantRepository;
+import com.ds.project.app_context.repositories.PromotionProductRepository;
 import com.ds.project.app_context.repositories.PromotionRepository;
 import com.ds.project.common.entities.dto.request.PromotionRequest;
 import com.ds.project.common.entities.dto.response.PromotionResponse;
@@ -22,11 +26,19 @@ import java.util.List;
 public class PromotionService implements IPromotionService {
 
     private final PromotionRepository promotionRepository;
+    private final PromotionProductRepository promotionProductRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final PromotionMapper mapper;
 
     @Override
     @Transactional
     public PromotionResponse createPromotion(PromotionRequest request) {
+        // ❌ check trùng tên
+        if (promotionRepository.existsByNameIgnoreCase(request.getName())) {
+            throw new IllegalArgumentException(
+                    "Tên khuyến mãi đã tồn tại"
+            );
+        }
         // Validate ngày tháng
         if (request.getStartDate().isAfter(request.getEndDate())) {
             throw new IllegalArgumentException("Start date must be before end date");
@@ -54,6 +66,16 @@ public class PromotionService implements IPromotionService {
         Promotion promotion = promotionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Promotion not found with id=" + id));
 
+        // ❌ check trùng tên (trừ chính nó)
+        if (promotionRepository.existsByNameIgnoreCaseAndIdNot(
+                request.getName(), id)) {
+            throw new IllegalArgumentException(
+                    "Tên khuyến mãi đã tồn tại"
+            );
+        }
+
+        Promotion.PromotionStatus oldStatus = promotion.getStatus();
+
         promotion.setName(request.getName());
         promotion.setDescription(request.getDescription());
         promotion.setPercent(request.getPercent());
@@ -64,6 +86,17 @@ public class PromotionService implements IPromotionService {
         }
 
         Promotion updated = promotionRepository.save(promotion);
+
+        // ⭐⭐ TRIGGER cập nhật giá sản phẩm ⭐⭐
+        if (oldStatus != updated.getStatus()) {
+            List<PromotionProduct> pps =
+                    promotionProductRepository.findByPromotionId(updated.getId());
+
+            for (PromotionProduct pp : pps) {
+                recalculatePriceSaleForVariant(pp.getProductVariant());
+            }
+        }
+
         return mapper.mapToDto(updated);
     }
 
@@ -93,6 +126,39 @@ public class PromotionService implements IPromotionService {
         promotionRepository.deleteById(id);
     }
 
+    @Transactional
+    public void recalculatePriceSaleForVariant(ProductVariant variant) {
+        if (variant == null) return;
+
+        LocalDate today = LocalDate.now();
+
+        List<PromotionProduct> pps =
+                promotionProductRepository.findByProductVariantId(variant.getId());
+
+        double maxPercent = 0;
+
+        for (PromotionProduct pp : pps) {
+            Promotion promo = pp.getPromotion();
+            if (promo == null) continue;
+
+            if (promo.getStatus() == Promotion.PromotionStatus.ACTIVE
+                    && !today.isBefore(promo.getStartDate())
+                    && !today.isAfter(promo.getEndDate())) {
+
+                maxPercent = Math.max(maxPercent, promo.getPercent());
+            }
+        }
+
+        if (maxPercent > 0) {
+            variant.setPriceSale(
+                    variant.getPrice() * (100 - maxPercent) / 100
+            );
+        } else {
+            variant.setPriceSale(variant.getPrice());
+        }
+
+        productVariantRepository.save(variant);
+    }
     /**
      * Chạy mỗi ngày lúc 0h
      */

@@ -16,4 +16,10 @@ public interface AttributeRepository extends JpaRepository<Attribute, String>, J
     Optional<Attribute> findByKeyAndValue(String key, String value);
     boolean existsByKeyIgnoreCaseAndValueIgnoreCase(String key, String value);
 
+    boolean existsByKeyIgnoreCaseAndValueIgnoreCaseAndIdNot(
+            String key,
+            String value,
+            String id
+    );
+
 }

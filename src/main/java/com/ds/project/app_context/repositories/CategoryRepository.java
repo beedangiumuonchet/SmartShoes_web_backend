@@ -16,8 +16,7 @@ public interface CategoryRepository extends JpaRepository<Category, String> , Jp
     boolean existsByName(String name);
     Optional<Category> findByNameIgnoreCase(String name);
     boolean existsBySlug(String slug);
-
-
+    boolean existsByNameIgnoreCaseAndIdNot(String name, String id);
     boolean existsBySlugAndIdNot(String slug, String id);
 
 }

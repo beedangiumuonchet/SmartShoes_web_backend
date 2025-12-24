@@ -19,12 +19,17 @@ public class ColorService implements IColorService {
 
     @Override
     public ColorResponse createColor(ColorRequest request) {
-        if (colorRepository.existsByName(request.getName())) {
-            throw new IllegalArgumentException("Color with name '" + request.getName() + "' already exists");
+
+        String name = request.getName().trim();
+
+        if (colorRepository.existsByNameIgnoreCase(name)) {
+            throw new IllegalArgumentException(
+                    "Color with name '" + name + "' already exists"
+            );
         }
 
         Color color = new Color();
-        color.setName(request.getName());
+        color.setName(name);
 
         Color saved = colorRepository.save(color);
         return mapToResponse(saved);
@@ -47,13 +52,31 @@ public class ColorService implements IColorService {
 
     @Override
     public ColorResponse updateColor(String id, ColorRequest request) {
+
         Color color = colorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Color not found with id: " + id));
 
-        color.setName(request.getName());
+        String newName = request.getName().trim();
+
+        boolean isNameChanged =
+                newName != null &&
+                        !newName.equalsIgnoreCase(color.getName());
+
+        // ❗ CHECK TRÙNG NAME (IGNORE CASE)
+        if (isNameChanged &&
+                colorRepository.existsByNameIgnoreCaseAndIdNot(newName, id)) {
+
+            throw new IllegalArgumentException(
+                    "Color with name '" + newName + "' already exists"
+            );
+        }
+
+        color.setName(newName);
+
         Color updated = colorRepository.save(color);
         return mapToResponse(updated);
     }
+
 
     @Override
     public void deleteColor(String id) {

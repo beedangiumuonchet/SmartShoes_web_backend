@@ -25,50 +25,67 @@ public class AttributeService implements IAttributeService {
 
     @Override
     public AttributeResponse createAttribute(AttributeRequest request) {
-        try {
-            if (attributeRepository.existsByKeyIgnoreCaseAndValueIgnoreCase(request.getKey(), request.getValue())) {
-                throw new IllegalArgumentException(
-                        String.format("Attribute with key='%s' and value='%s' already exists", request.getKey(), request.getValue())
-                );
-            }
 
-            Attribute attribute = attributeMapper.mapToEntity(request);
-            Attribute saved = attributeRepository.save(attribute);
-            log.info("✅ Created new attribute: key={}, value={}", request.getKey(), request.getValue());
-            return attributeMapper.mapToDto(saved);
-        } catch (Exception e) {
-            log.error("❌ Failed to create attribute: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create attribute: " + e.getMessage());
+        String key = request.getKey().trim();
+        String value = request.getValue().trim();
+
+        if (attributeRepository.existsByKeyIgnoreCaseAndValueIgnoreCase(key, value)) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Attribute with key='%s' and value='%s' already exists",
+                            key, value
+                    )
+            );
         }
+
+        Attribute attribute = attributeMapper.mapToEntity(request);
+        attribute.setKey(key);
+        attribute.setValue(value);
+
+        Attribute saved = attributeRepository.save(attribute);
+
+        log.info("✅ Created new attribute: key={}, value={}", key, value);
+        return attributeMapper.mapToDto(saved);
     }
+
 
     @Override
     public AttributeResponse updateAttribute(String id, AttributeRequest request) {
-        try {
-            Attribute existing = attributeRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("Attribute not found"));
 
-            // ✅ Kiểm tra nếu đổi key/value trùng với bản ghi khác
-            boolean isDuplicate = attributeRepository.existsByKeyIgnoreCaseAndValueIgnoreCase(request.getKey(), request.getValue());
-            if (isDuplicate && (!existing.getKey().equalsIgnoreCase(request.getKey())
-                    || !existing.getValue().equalsIgnoreCase(request.getValue()))) {
-                throw new IllegalArgumentException(
-                        String.format("Another attribute already has key='%s' and value='%s'", request.getKey(), request.getValue())
-                );
-            }
+        Attribute existing = attributeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Attribute not found"));
 
-            existing.setKey(request.getKey());
-            existing.setValue(request.getValue());
-            existing.setDescription(request.getDescription());
+        String newKey = request.getKey().trim();
+        String newValue = request.getValue().trim();
 
-            Attribute updated = attributeRepository.save(existing);
-            log.info("📝 Updated attribute: id={}, key={}", id, request.getKey());
-            return attributeMapper.mapToDto(updated);
-        } catch (Exception e) {
-            log.error("❌ Failed to update attribute {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Failed to update attribute: " + e.getMessage());
+        boolean isKeyOrValueChanged =
+                !newKey.equalsIgnoreCase(existing.getKey()) ||
+                        !newValue.equalsIgnoreCase(existing.getValue());
+
+        // ❗ CHECK TRÙNG (IGNORE CASE + KHÁC ID)
+        if (isKeyOrValueChanged &&
+                attributeRepository.existsByKeyIgnoreCaseAndValueIgnoreCaseAndIdNot(
+                        newKey, newValue, id
+                )) {
+
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Another attribute already has key='%s' and value='%s'",
+                            newKey, newValue
+                    )
+            );
         }
+
+        existing.setKey(newKey);
+        existing.setValue(newValue);
+        existing.setDescription(request.getDescription());
+
+        Attribute updated = attributeRepository.save(existing);
+
+        log.info("📝 Updated attribute: id={}, key={}, value={}", id, newKey, newValue);
+        return attributeMapper.mapToDto(updated);
     }
+
 
     @Override
     @Transactional(readOnly = true)
