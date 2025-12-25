@@ -104,7 +104,7 @@ def get_latent_features_img(image_path, model, transformations):
         print(f"⚠️ Lỗi ảnh: {image_path} ({e})")
         return None
 
-def perform_search(queryFeatures, db_features, threshold=0.7):
+def perform_search(queryFeatures, db_features, threshold=0.8):
     """
     Tìm các ảnh tương tự dựa trên Euclidean distance.
     - queryFeatures: numpy array của ảnh truy vấn
@@ -127,6 +127,7 @@ def perform_search(queryFeatures, db_features, threshold=0.7):
         sim = 1 - (d / max_d) if max_d != 0 else 0.0
         feat = db_features[i]
 
+        
         if sim >= threshold:
             results.append({
                 "similarity": float(sim),
@@ -134,6 +135,7 @@ def perform_search(queryFeatures, db_features, threshold=0.7):
                 "imagePath": feat.get("imagePath"),
                 "productVariantId": feat.get("productVariantId")
             })
+            print(f"🔍 ID: {feat.get('id')}, Distance: {d:.4f}, Similarity: {sim:.4f}")
 
     # Sắp xếp giảm dần theo similarity
     results = sorted(results, key=lambda x: x["similarity"], reverse=True)
